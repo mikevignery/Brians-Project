@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SipSocial — Bottle Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Karla:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   SipSocial — "backbar at dusk"
+   ============================================================ */
+:root {
+  --char: #191009;          /* deep roasted-oak background */
+  --barrel: #261811;        /* panels and cards */
+  --barrel-2: #33221a;      /* raised surfaces */
+  --amber: #e39b2d;         /* whiskey in the glass */
+  --amber-deep: #b96f1e;
+  --copper: #a9542b;
+  --paper: #f3e9d2;         /* label paper (main text) */
+  --muted: #a68f73;
+  --line: rgba(243, 233, 210, 0.13);
+  --danger: #d96b4f;
+  --ok: #8fae6b;
+  --radius: 10px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--char);
+  color: var(--paper);
+  font-family: 'Karla', system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.55;
+  min-height: 100vh;
+}
+h1, h2, h3, .display { font-family: 'Fraunces', Georgia, serif; }
+button { font-family: inherit; cursor: pointer; }
+input, select, textarea { font-family: inherit; }
+a { color: var(--amber); }
+:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+
+.hidden { display: none !important; }
+
+/* ---------- shared form styles ---------- */
+.field { margin-bottom: 14px; }
+.field label {
+  display: block; font-size: 12px; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 5px;
+}
+.field input, .field textarea {
+  width: 100%; padding: 11px 12px;
+  background: var(--char); color: var(--paper);
+  border: 1px solid var(--line); border-radius: 8px; font-size: 15px;
+}
+.field input:focus, .field textarea:focus { border-color: var(--amber); outline: none; }
+.btn {
+  display: inline-block; padding: 12px 22px; border-radius: 8px;
+  border: none; font-weight: 700; font-size: 15px;
+  background: var(--amber); color: #241505;
+  transition: transform 0.12s ease, background 0.12s ease;
+}
+.btn:hover { background: #f0ab3e; transform: translateY(-1px); }
+.btn.full { width: 100%; }
+.btn.ghost {
+  background: transparent; color: var(--paper);
+  border: 1px solid var(--line);
+}
+.btn.ghost:hover { border-color: var(--amber); color: var(--amber); background: transparent; }
+.form-msg { margin-top: 12px; font-size: 14px; padding: 10px 12px; border-radius: 8px; display: none; }
+.form-msg.err { display: block; background: rgba(217,107,79,0.12); color: var(--danger); border: 1px solid rgba(217,107,79,0.35); }
+.form-msg.ok { display: block; background: rgba(143,174,107,0.12); color: var(--ok); border: 1px solid rgba(143,174,107,0.35); }
+
+/* ============================================================
+   AUTH SCREEN
+   ============================================================ */
+#auth-screen {
+  min-height: 100vh; display: grid;
+  grid-template-columns: 1.1fr 1fr;
+}
+.auth-hero {
+  padding: 56px; display: flex; flex-direction: column; justify-content: space-between;
+  background:
+    radial-gradient(ellipse 90% 60% at 20% 110%, rgba(227,155,45,0.16), transparent 60%),
+    var(--char);
+  border-right: 1px solid var(--line);
+}
+.wordmark {
+  font-family: 'Fraunces', serif; font-weight: 700; font-size: 22px;
+  letter-spacing: 0.01em;
+}
+.wordmark .dot { color: var(--amber); }
+.auth-hero h1 {
+  font-size: clamp(38px, 4.5vw, 60px); font-weight: 600; line-height: 1.08;
+  max-width: 12em;
+}
+.auth-hero h1 em { font-style: italic; color: var(--amber); }
+.auth-hero p.sub { margin-top: 18px; color: var(--muted); max-width: 34em; font-size: 17px; }
+.hero-points { margin-top: 30px; display: grid; gap: 12px; max-width: 30em; }
+.hero-points div { display: flex; gap: 12px; align-items: baseline; color: var(--paper); font-size: 15px; }
+.hero-points .tick { color: var(--amber); font-family: 'Fraunces', serif; font-weight: 700; }
+.age-note { font-size: 13px; color: var(--muted); }
+
+.auth-panel { display: flex; align-items: center; justify-content: center; padding: 40px 24px; }
+.auth-card {
+  width: 100%; max-width: 420px; background: var(--barrel);
+  border: 1px solid var(--line); border-radius: 14px; padding: 30px;
+}
+.auth-tabs { display: flex; gap: 8px; margin-bottom: 22px; }
+.auth-tabs button {
+  flex: 1; padding: 9px; border-radius: 8px; border: 1px solid var(--line);
+  background: transparent; color: var(--muted); font-weight: 700; font-size: 14px;
+}
+.auth-tabs button.active { background: var(--barrel-2); color: var(--paper); border-color: var(--amber); }
+.auth-card h2 { font-size: 24px; margin-bottom: 4px; }
+.auth-card .lede { color: var(--muted); font-size: 14px; margin-bottom: 20px; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+/* ============================================================
+   MAIN APP
+   ============================================================ */
+#app-screen { min-height: 100vh; }
+.topbar {
+  position: sticky; top: 0; z-index: 40;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 28px; background: rgba(25,16,9,0.92);
+  backdrop-filter: blur(8px); border-bottom: 1px solid var(--line);
+}
+.topbar .who { color: var(--muted); font-size: 14px; margin-right: 14px; }
+.topbar .right { display: flex; align-items: center; }
+
+.shelf-head { padding: 40px 28px 8px; max-width: 1200px; margin: 0 auto; }
+.shelf-head h2 { font-size: clamp(26px, 3vw, 36px); font-weight: 600; }
+.shelf-head p { color: var(--muted); margin-top: 6px; max-width: 44em; }
+
+.controls {
+  max-width: 1200px; margin: 18px auto 0; padding: 0 28px;
+  display: flex; flex-wrap: wrap; gap: 12px; align-items: center;
+}
+#search {
+  flex: 1; min-width: 220px; padding: 11px 14px;
+  background: var(--barrel); color: var(--paper);
+  border: 1px solid var(--line); border-radius: 999px; font-size: 15px;
+}
+#search:focus { border-color: var(--amber); outline: none; }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.chip {
+  padding: 8px 15px; border-radius: 999px; font-size: 13.5px; font-weight: 700;
+  background: transparent; color: var(--muted); border: 1px solid var(--line);
+}
+.chip.active { background: var(--amber); color: #241505; border-color: var(--amber); }
+
+.grid {
+  max-width: 1200px; margin: 26px auto 90px; padding: 0 28px;
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px;
+}
+.card {
+  background: var(--barrel); border: 1px solid var(--line); border-radius: var(--radius);
+  overflow: hidden; text-align: left; color: var(--paper); padding: 0;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+.card:hover { transform: translateY(-3px); border-color: rgba(227,155,45,0.5); }
+.card .img {
+  height: 190px; display: flex; align-items: center; justify-content: center;
+  background: var(--barrel-2); overflow: hidden;
+}
+.card .img img { width: 100%; height: 100%; object-fit: cover; }
+.card .placeholder {
+  font-family: 'Fraunces', serif; font-size: 52px; font-weight: 700; color: rgba(243,233,210,0.16);
+}
+.card .body { padding: 16px; }
+.card .type-tag {
+  display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--amber); margin-bottom: 6px;
+}
+.card h3 { font-size: 19px; font-weight: 600; line-height: 1.2; }
+.card .company { color: var(--muted); font-size: 13.5px; margin-top: 3px; }
+.card .meta { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; }
+.card .price { font-weight: 700; font-size: 16px; }
+.card .stars { color: var(--amber); font-size: 14px; letter-spacing: 1px; }
+.card .stars .count { color: var(--muted); font-size: 12.5px; letter-spacing: 0; }
+.empty-state { grid-column: 1/-1; text-align: center; color: var(--muted); padding: 60px 20px; }
+
+/* ============================================================
+   BOTTLE DETAIL MODAL
+   ============================================================ */
+.modal-back {
+  position: fixed; inset: 0; background: rgba(10,6,3,0.72); z-index: 60;
+  display: flex; align-items: flex-start; justify-content: center;
+  padding: 5vh 16px; overflow-y: auto;
+}
+.modal {
+  background: var(--barrel); border: 1px solid var(--line); border-radius: 16px;
+  width: 100%; max-width: 780px; position: relative;
+}
+.modal .close {
+  position: absolute; top: 14px; right: 14px; z-index: 2;
+  width: 36px; height: 36px; border-radius: 50%;
+  background: var(--char); color: var(--paper); border: 1px solid var(--line); font-size: 16px;
+}
+.modal-top { display: grid; grid-template-columns: 280px 1fr; }
+.modal-top .img {
+  background: var(--barrel-2); border-radius: 16px 0 0 0;
+  display: flex; align-items: center; justify-content: center; min-height: 300px; overflow: hidden;
+}
+.modal-top .img img { width: 100%; height: 100%; object-fit: cover; }
+.modal-top .img .placeholder { font-family:'Fraunces',serif; font-size: 84px; font-weight:700; color: rgba(243,233,210,0.14); }
+.modal-info { padding: 30px; }
+.modal-info .type-tag { font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--amber); }
+.modal-info h2 { font-size: 30px; font-weight: 600; margin-top: 4px; line-height: 1.15; }
+.modal-info .company { color: var(--muted); margin-top: 2px; }
+.modal-info .price { font-size: 21px; font-weight: 700; margin-top: 12px; }
+.modal-info .desc { margin-top: 14px; font-size: 15px; }
+.notes { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 7px; }
+.notes span {
+  font-size: 12.5px; padding: 5px 11px; border-radius: 999px;
+  background: var(--char); border: 1px solid var(--line); color: var(--paper);
+}
+
+/* --- signature: the pour gauge (rarity as a fill level) --- */
+.pour-gauge { margin-top: 20px; display: flex; align-items: center; gap: 14px; }
+.bottle-shape {
+  width: 26px; height: 64px; position: relative; flex-shrink: 0;
+  border: 2px solid var(--muted); border-radius: 5px 5px 8px 8px;
+}
+.bottle-shape::before {
+  content: ''; position: absolute; top: -10px; left: 7px;
+  width: 8px; height: 10px; border: 2px solid var(--muted); border-bottom: none;
+  border-radius: 3px 3px 0 0;
+}
+.bottle-shape .fill {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  background: linear-gradient(180deg, var(--amber), var(--amber-deep));
+  border-radius: 0 0 6px 6px;
+  transition: height 0.6s ease;
+}
+.pour-gauge .label b { display: block; font-size: 14px; }
+.pour-gauge .label small { color: var(--muted); font-size: 13px; }
+
+.modal-section { padding: 24px 30px; border-top: 1px solid var(--line); }
+.modal-section h3 { font-size: 19px; margin-bottom: 14px; }
+.cocktail { background: var(--char); border: 1px solid var(--line); border-radius: 10px; padding: 15px 16px; margin-bottom: 10px; }
+.cocktail b { font-family: 'Fraunces', serif; font-size: 16px; }
+.cocktail p { color: var(--muted); font-size: 14px; margin-top: 5px; }
+
+.rate-row { display: flex; gap: 6px; margin-bottom: 10px; }
+.rate-row button {
+  font-size: 26px; background: none; border: none; color: var(--line); line-height: 1;
+  transition: color 0.1s ease, transform 0.1s ease;
+}
+.rate-row button.lit { color: var(--amber); }
+.rate-row button:hover { transform: scale(1.15); }
+.review {
+  border-top: 1px solid var(--line); padding: 13px 0;
+}
+.review .head { display: flex; justify-content: space-between; font-size: 13.5px; }
+.review .head .name { font-weight: 700; }
+.review .head .stars { color: var(--amber); }
+.review p { color: var(--muted); font-size: 14px; margin-top: 4px; }
+.ask-aidan {
+  margin-top: 18px; background: transparent; border: 1px dashed rgba(227,155,45,0.5);
+  color: var(--amber); padding: 9px 15px; border-radius: 8px; font-weight: 700; font-size: 13.5px;
+}
+.ask-aidan:hover { background: rgba(227,155,45,0.08); }
+
+/* ============================================================
+   AIDAN
+   ============================================================ */
+#aidan-fab {
+  position: fixed; bottom: 22px; right: 22px; z-index: 70;
+  width: 58px; height: 58px; border-radius: 50%;
+  background: var(--amber); color: #241505; border: none;
+  font-family: 'Fraunces', serif; font-weight: 700; font-size: 20px;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.45);
+}
+#aidan-panel {
+  position: fixed; bottom: 92px; right: 22px; z-index: 70;
+  width: min(370px, calc(100vw - 32px)); height: 480px; max-height: 70vh;
+  background: var(--barrel); border: 1px solid var(--line); border-radius: 14px;
+  display: flex; flex-direction: column; overflow: hidden;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+}
+.aidan-head { padding: 14px 16px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 10px; }
+.aidan-head .avatar {
+  width: 34px; height: 34px; border-radius: 50%; background: var(--amber); color: #241505;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Fraunces', serif; font-weight: 700;
+}
+.aidan-head b { display: block; font-size: 15px; }
+.aidan-head small { color: var(--muted); font-size: 12px; }
+#aidan-log { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.msg { max-width: 85%; padding: 10px 13px; border-radius: 12px; font-size: 14px; white-space: pre-line; }
+.msg.aidan { background: var(--barrel-2); border: 1px solid var(--line); align-self: flex-start; border-bottom-left-radius: 4px; }
+.msg.user { background: var(--amber); color: #241505; align-self: flex-end; border-bottom-right-radius: 4px; }
+.aidan-chips { padding: 0 14px 10px; display: flex; flex-wrap: wrap; gap: 6px; }
+.aidan-chips button {
+  font-size: 12.5px; padding: 6px 11px; border-radius: 999px;
+  background: transparent; color: var(--amber); border: 1px solid rgba(227,155,45,0.5);
+}
+.aidan-input { display: flex; gap: 8px; padding: 12px; border-top: 1px solid var(--line); }
+.aidan-input input {
+  flex: 1; padding: 10px 12px; background: var(--char); color: var(--paper);
+  border: 1px solid var(--line); border-radius: 8px; font-size: 14px;
+}
+.aidan-input button { padding: 10px 16px; border-radius: 8px; border: none; background: var(--amber); color:#241505; font-weight: 700; }
+
+/* ---------- setup notice ---------- */
+#setup-notice {
+  position: fixed; inset: 0; z-index: 100; background: var(--char);
+  display: flex; align-items: center; justify-content: center; padding: 24px; text-align: center;
+}
+#setup-notice .box { max-width: 480px; }
+#setup-notice code { background: var(--barrel-2); padding: 2px 7px; border-radius: 5px; color: var(--amber); }
+
+/* ---------- responsive ---------- */
+@media (max-width: 860px) {
+  #auth-screen { grid-template-columns: 1fr; }
+  .auth-hero { padding: 36px 24px; border-right: none; border-bottom: 1px solid var(--line); gap: 22px; }
+  .modal-top { grid-template-columns: 1fr; }
+  .modal-top .img { border-radius: 16px 16px 0 0; min-height: 220px; }
+  .topbar { padding: 12px 16px; }
+  .shelf-head, .controls, .grid { padding-left: 16px; padding-right: 16px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Shown only if the Supabase keys below haven't been filled in yet -->
+<div id="setup-notice" class="hidden">
+  <div class="box">
+    <div class="wordmark" style="font-size:28px;">Sip<span class="dot">Social</span></div>
+    <h2 style="margin:18px 0 10px;">Almost there — one step left</h2>
+    <p style="color:var(--muted);">Open <code>index.html</code> in a text editor and paste your Supabase <b>Project URL</b> and <b>anon key</b> into the two lines near the top of the <code>&lt;script&gt;</code> section (they're clearly marked). The setup guide walks you through it.</p>
+  </div>
+</div>
+
+<!-- ============================ AUTH ============================ -->
+<div id="auth-screen" class="hidden">
+  <div class="auth-hero">
+    <div class="wordmark">Sip<span class="dot">Social</span></div>
+    <div>
+      <h1>Know the bottle <em>before</em> you buy it.</h1>
+      <p class="sub">Standing in the whiskey aisle holding something unfamiliar? SipSocial tells you what it tastes like, how hard it is to find, and exactly what to make with it — with Aidan, your no-judgment whiskey guide, along for the ride.</p>
+      <div class="hero-points">
+        <div><span class="tick">01</span><span>Flavor, price &amp; rarity intelligence for every bottle</span></div>
+        <div><span class="tick">02</span><span>Cocktail recipes matched to the bottle in your hand</span></div>
+        <div><span class="tick">03</span><span>Real ratings from people who actually poured it</span></div>
+      </div>
+    </div>
+    <p class="age-note">You must be 21 or older to enter. Please enjoy responsibly.</p>
+  </div>
+
+  <div class="auth-panel">
+    <div class="auth-card">
+      <div class="auth-tabs" role="tablist">
+        <button id="tab-signin" class="active" onclick="showAuthTab('signin')">Sign in</button>
+        <button id="tab-signup" onclick="showAuthTab('signup')">Create account</button>
+      </div>
+
+      <!-- SIGN IN -->
+      <div id="signin-form">
+        <h2>Welcome back</h2>
+        <p class="lede">Pull up a stool.</p>
+        <div class="field"><label for="si-email">Email</label><input id="si-email" type="email" autocomplete="email"></div>
+        <div class="field"><label for="si-pass">Password</label><input id="si-pass" type="password" autocomplete="current-password"></div>
+        <button class="btn full" onclick="signIn()">Sign in</button>
+        <div id="si-msg" class="form-msg"></div>
+      </div>
+
+      <!-- SIGN UP -->
+      <div id="signup-form" class="hidden">
+        <h2>Join SipSocial</h2>
+        <p class="lede">Takes a minute. You must be 21+ to enter.</p>
+        <div class="field"><label for="su-name">Full name</label><input id="su-name" type="text" autocomplete="name"></div>
+        <div class="two-col">
+          <div class="field"><label for="su-email">Email</label><input id="su-email" type="email" autocomplete="email"></div>
+          <div class="field"><label for="su-phone">Phone</label><input id="su-phone" type="tel" autocomplete="tel" placeholder="(555) 555-5555"></div>
+        </div>
+        <div class="two-col">
+          <div class="field"><label for="su-dob">Date of birth</label><input id="su-dob" type="date"></div>
+          <div class="field"><label for="su-pass">Password</label><input id="su-pass" type="password" autocomplete="new-password" placeholder="6+ characters"></div>
+        </div>
+        <button class="btn full" onclick="signUp()">Verify my age &amp; create account</button>
+        <div id="su-msg" class="form-msg"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================ APP ============================ -->
+<div id="app-screen" class="hidden">
+  <div class="topbar">
+    <div class="wordmark">Sip<span class="dot">Social</span></div>
+    <div class="right">
+      <span class="who" id="who"></span>
+      <button class="btn ghost" id="signout-btn" onclick="signOut()">Sign out</button>
+    </div>
+  </div>
+
+  <div class="shelf-head">
+    <h2>The Shelf</h2>
+    <p>Every bottle here carries its own intelligence — flavor, price, rarity, and the cocktails it was born for. Tap one to open it up.</p>
+  </div>
+
+  <div class="controls">
+    <input id="search" type="search" placeholder="Search bottles or distilleries…" oninput="renderGrid()">
+    <div class="chips" id="type-chips"></div>
+  </div>
+
+  <div class="grid" id="grid"></div>
+</div>
+
+<!-- ============================ DETAIL MODAL ============================ -->
+<div id="modal-back" class="modal-back hidden" onclick="if(event.target===this) closeModal()">
+  <div class="modal" role="dialog" aria-modal="true" id="modal"></div>
+</div>
+
+<!-- ============================ AIDAN ============================ -->
+<button id="aidan-fab" class="hidden" title="Ask Aidan" onclick="toggleAidan()">A.</button>
+<div id="aidan-panel" class="hidden">
+  <div class="aidan-head">
+    <div class="avatar">A</div>
+    <div><b>Aidan</b><small>Your whiskey guide — zero judgment</small></div>
+  </div>
+  <div id="aidan-log"></div>
+  <div class="aidan-chips" id="aidan-chips"></div>
+  <div class="aidan-input">
+    <input id="aidan-text" placeholder="Ask about whiskey…" onkeydown="if(event.key==='Enter') aidanSend()">
+    <button onclick="aidanSend()">Ask</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* ============================================================
+   STEP 1 (the ONLY thing you must edit):
+   Paste your two Supabase values between the quotes below.
+   Find them in Supabase: Settings (gear icon) -> API Keys / Data API
+   ============================================================ */
+const SUPABASE_URL = "PASTE_YOUR_PROJECT_URL_HERE";       // looks like: https://abcdefgh.supabase.co
+const SUPABASE_ANON_KEY = "PASTE_YOUR_ANON_KEY_HERE";     // long string starting with: eyJ...
+
+/* ============================================================
+   ★★★ LOGIN ON/OFF SWITCH ★★★
+   ------------------------------------------------------------
+   false = PREVIEW MODE (current setting)
+           Login & sign-up are hidden. Anyone can browse the
+           shelf, open bottles, and chat with Aidan.
+           Ratings are switched off (they need accounts).
+
+   true  = LIVE MODE
+           The age-gated login/sign-up screen is required
+           before anyone can enter the site.
+
+   TO GO LIVE: change the word  false  to  true  on the next
+   line, save, and re-upload this file to GitHub. That's it —
+   all the login code is still here, just switched off.
+   (Also see go-live step 2 in preview-mode.sql)
+   ============================================================ */
+const AUTH_ENABLED = false;
+
+/* ============================================================ */
+
+// Stand-in visitor used while login is switched off
+const GUEST_USER = { id: null, email: 'guest', user_metadata: { full_name: 'Guest' } };
+
+let db = null;
+let bottles = [];
+let ratingsByBottle = {};   // bottle_id -> [ratings]
+let namesById = {};         // user_id -> first name
+let currentUser = null;
+let activeType = 'All';
+let myStars = 0;
+let openBottleId = null;
+
+const $ = (id) => document.getElementById(id);
+
+// ---------- boot ----------
+window.addEventListener('DOMContentLoaded', async () => {
+  if (SUPABASE_URL.includes('PASTE_') || SUPABASE_ANON_KEY.includes('PASTE_')) {
+    $('setup-notice').classList.remove('hidden');
+    return;
+  }
+  db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  // PREVIEW MODE: skip login entirely and go straight to the shelf
+  if (!AUTH_ENABLED) { enterApp(GUEST_USER); return; }
+
+  const { data: { session } } = await db.auth.getSession();
+  if (session) enterApp(session.user); else showAuth();
+  db.auth.onAuthStateChange((_evt, sess) => {
+    if (sess) enterApp(sess.user); else showAuth();
+  });
+});
+
+function showAuth() {
+  currentUser = null;
+  $('app-screen').classList.add('hidden');
+  $('aidan-fab').classList.add('hidden');
+  $('aidan-panel').classList.add('hidden');
+  $('auth-screen').classList.remove('hidden');
+}
+
+async function enterApp(user) {
+  currentUser = user;
+  $('auth-screen').classList.add('hidden');
+  $('app-screen').classList.remove('hidden');
+  $('aidan-fab').classList.remove('hidden');
+  if (AUTH_ENABLED) {
+    const name = (user.user_metadata && user.user_metadata.full_name) || user.email;
+    $('who').textContent = 'Cheers, ' + String(name).split(' ')[0];
+    $('signout-btn').classList.remove('hidden');
+  } else {
+    $('who').textContent = 'Preview mode — login switched off';
+    $('signout-btn').classList.add('hidden');
+  }
+  await loadEverything();
+  aidanGreetOnce();
+}
+
+// ---------- auth actions ----------
+function showAuthTab(which) {
+  $('tab-signin').classList.toggle('active', which === 'signin');
+  $('tab-signup').classList.toggle('active', which === 'signup');
+  $('signin-form').classList.toggle('hidden', which !== 'signin');
+  $('signup-form').classList.toggle('hidden', which !== 'signup');
+}
+
+function msg(el, text, kind) {
+  el.className = 'form-msg ' + kind;
+  el.textContent = text;
+}
+
+function ageFromDOB(dobStr) {
+  const dob = new Date(dobStr + 'T00:00:00');
+  const now = new Date();
+  let age = now.getFullYear() - dob.getFullYear();
+  const m = now.getMonth() - dob.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < dob.getDate())) age--;
+  return age;
+}
+
+async function signUp() {
+  const name = $('su-name').value.trim();
+  const email = $('su-email').value.trim();
+  const phone = $('su-phone').value.trim();
+  const dob = $('su-dob').value;
+  const pass = $('su-pass').value;
+  const box = $('su-msg');
+
+  if (!name || !email || !phone || !dob || !pass)
+    return msg(box, 'Please fill in every field — all of them are required to enter.', 'err');
+  if (pass.length < 6)
+    return msg(box, 'Password needs to be at least 6 characters.', 'err');
+  const age = ageFromDOB(dob);
+  if (isNaN(age) || age < 0 || age > 120)
+    return msg(box, 'That birthdate doesn\u2019t look right — please double-check it.', 'err');
+  if (age < 21)
+    return msg(box, 'Sorry — you must be 21 or older to use SipSocial. See you in a few years.', 'err');
+
+  msg(box, 'Creating your account…', 'ok');
+  const { data, error } = await db.auth.signUp({
+    email, password: pass,
+    options: { data: { full_name: name, phone: phone, date_of_birth: dob } }
+  });
+  if (error) return msg(box, error.message, 'err');
+  if (data.session) return; // signed straight in — onAuthStateChange takes over
+  msg(box, 'Account created! Check your email for a confirmation link, then come back and sign in.', 'ok');
+}
+
+async function signIn() {
+  const box = $('si-msg');
+  msg(box, 'Signing in…', 'ok');
+  const { error } = await db.auth.signInWithPassword({
+    email: $('si-email').value.trim(),
+    password: $('si-pass').value
+  });
+  if (error) msg(box, error.message, 'err');
+}
+
+async function signOut() { await db.auth.signOut(); }
+
+// ---------- data ----------
+async function loadEverything() {
+  const [{ data: b, error: be }, { data: r }, { data: p }] = await Promise.all([
+    db.from('bottles').select('*').order('name'),
+    db.from('ratings').select('*'),
+    db.from('profiles').select('id, full_name')
+  ]);
+  if (be) { $('grid').innerHTML = '<div class="empty-state">Couldn\u2019t load bottles: ' + esc(be.message) + '</div>'; return; }
+  bottles = b || [];
+  ratingsByBottle = {};
+  (r || []).forEach(rt => {
+    (ratingsByBottle[rt.bottle_id] = ratingsByBottle[rt.bottle_id] || []).push(rt);
+  });
+  namesById = {};
+  (p || []).forEach(pr => namesById[pr.id] = (pr.full_name || 'Member').split(' ')[0]);
+  buildChips();
+  renderGrid();
+}
+
+function avgFor(id) {
+  const list = ratingsByBottle[id] || [];
+  if (!list.length) return null;
+  return list.reduce((s, r) => s + r.stars, 0) / list.length;
+}
+
+// ---------- shelf ----------
+function buildChips() {
+  const types = ['All', ...new Set(bottles.map(b => b.type))];
+  $('type-chips').innerHTML = types.map(t =>
+    `<button class="chip ${t === activeType ? 'active' : ''}" onclick="setType('${esc(t)}')">${esc(t)}</button>`
+  ).join('');
+}
+function setType(t) { activeType = t; buildChips(); renderGrid(); }
+
+function starString(avg) {
+  const full = Math.round(avg);
+  return '★'.repeat(full) + '☆'.repeat(5 - full);
+}
+
+function renderGrid() {
+  const q = $('search').value.trim().toLowerCase();
+  const list = bottles.filter(b =>
+    (activeType === 'All' || b.type === activeType) &&
+    (!q || b.name.toLowerCase().includes(q) || b.company.toLowerCase().includes(q))
+  );
+  if (!list.length) {
+    $('grid').innerHTML = '<div class="empty-state">No bottles match. Try clearing the search — or add more bottles in your Supabase Table Editor.</div>';
+    return;
+  }
+  $('grid').innerHTML = list.map(b => {
+    const avg = avgFor(b.id);
+    const img = b.image_url
+      ? `<img src="${esc(b.image_url)}" alt="${esc(b.name)}" loading="lazy">`
+      : `<span class="placeholder">${esc(initials(b.name))}</span>`;
+    return `
+    <button class="card" onclick="openModal(${b.id})">
+      <div class="img">${img}</div>
+      <div class="body">
+        <span class="type-tag">${esc(b.type)}</span>
+        <h3>${esc(b.name)}</h3>
+        <div class="company">${esc(b.company)}</div>
+        <div class="meta">
+          <span class="price">${b.price != null ? '$' + Number(b.price).toFixed(2) : '—'}</span>
+          <span class="stars">${avg ? starString(avg) + ` <span class="count">(${(ratingsByBottle[b.id]||[]).length})</span>` : '<span class="count">No ratings yet</span>'}</span>
+        </div>
+      </div>
+    </button>`;
+  }).join('');
+}
+
+function initials(name) {
+  return name.split(' ').filter(w => /[A-Za-z0-9]/.test(w[0])).slice(0, 2).map(w => w[0]).join('');
+}
+
+// ---------- detail modal ----------
+const RARITY = {
+  1: ['Everyday find', 'On most shelves, most of the time'],
+  2: ['Easy to find', 'Widely stocked, occasionally sells out'],
+  3: ['Takes some hunting', 'Call ahead — not every store carries it'],
+  4: ['Allocated', 'Limited release; grab it if you see it at list price'],
+  5: ['Unicorn', 'Rare sighting — lotteries, raffles, and luck']
+};
+
+function openModal(id) {
+  const b = bottles.find(x => x.id === id);
+  if (!b) return;
+  openBottleId = id;
+  const mine = AUTH_ENABLED
+    ? (ratingsByBottle[id] || []).find(r => r.user_id === currentUser.id)
+    : null;
+  myStars = mine ? mine.stars : 0;
+
+  const notes = (b.tasting_notes || '').split(',').map(n => n.trim()).filter(Boolean);
+  const cocktails = Array.isArray(b.cocktails) ? b.cocktails : [];
+  const rar = RARITY[b.rarity] || RARITY[1];
+  const img = b.image_url
+    ? `<img src="${esc(b.image_url)}" alt="${esc(b.name)}">`
+    : `<span class="placeholder">${esc(initials(b.name))}</span>`;
+
+  $('modal').innerHTML = `
+    <button class="close" onclick="closeModal()" aria-label="Close">✕</button>
+    <div class="modal-top">
+      <div class="img">${img}</div>
+      <div class="modal-info">
+        <span class="type-tag">${esc(b.type)}</span>
+        <h2>${esc(b.name)}</h2>
+        <div class="company">${esc(b.company)}</div>
+        <div class="price">${b.price != null ? '$' + Number(b.price).toFixed(2) : ''}</div>
+        <p class="desc">${esc(b.description || '')}</p>
+        <div class="notes">${notes.map(n => `<span>${esc(n)}</span>`).join('')}</div>
+        <div class="pour-gauge">
+          <div class="bottle-shape"><div class="fill" style="height:${(b.rarity || 1) * 20}%"></div></div>
+          <div class="label"><b>${esc(rar[0])}</b><small>${esc(rar[1])}</small></div>
+        </div>
+        <button class="ask-aidan" onclick="aidanAboutBottle(${b.id})">Ask Aidan about this bottle →</button>
+      </div>
+    </div>
+    <div class="modal-section">
+      <h3>Make something with it</h3>
+      ${cocktails.length ? cocktails.map(c => `<div class="cocktail"><b>${esc(c.name)}</b><p>${esc(c.recipe)}</p></div>`).join('')
+        : '<p style="color:var(--muted)">No recipes added yet for this bottle.</p>'}
+    </div>
+    <div class="modal-section">
+      <h3>${AUTH_ENABLED ? (mine ? 'Your rating (tap to change)' : 'Rate this bottle') : 'Ratings'}</h3>
+      ${AUTH_ENABLED ? `
+      <div class="rate-row" id="rate-row">${[1,2,3,4,5].map(n =>
+        `<button aria-label="${n} star" class="${n <= myStars ? 'lit' : ''}" onclick="setStars(${n})">★</button>`).join('')}
+      </div>
+      <div class="field"><textarea id="rate-comment" rows="2" placeholder="What did you think? (optional)">${mine && mine.comment ? esc(mine.comment) : ''}</textarea></div>
+      <button class="btn" onclick="submitRating()">${mine ? 'Update rating' : 'Post rating'}</button>
+      <div id="rate-msg" class="form-msg"></div>` :
+      `<p style="color:var(--muted); font-size:14.5px;">Member ratings switch on when accounts go live.</p>`}
+      <div style="margin-top:20px" id="reviews">${renderReviews(id)}</div>
+    </div>`;
+  $('modal-back').classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+
+function renderReviews(id) {
+  const list = (ratingsByBottle[id] || []).slice().sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  if (!list.length) return '<p style="color:var(--muted)">Be the first to rate this one.</p>';
+  return list.map(r => `
+    <div class="review">
+      <div class="head">
+        <span class="name">${esc(namesById[r.user_id] || 'Member')}${currentUser && r.user_id === currentUser.id ? ' (you)' : ''}</span>
+        <span class="stars">${'★'.repeat(r.stars)}${'☆'.repeat(5 - r.stars)}</span>
+      </div>
+      ${r.comment ? `<p>${esc(r.comment)}</p>` : ''}
+    </div>`).join('');
+}
+
+function setStars(n) {
+  myStars = n;
+  const btns = $('rate-row').querySelectorAll('button');
+  btns.forEach((b, i) => b.classList.toggle('lit', i < n));
+}
+
+async function submitRating() {
+  if (!AUTH_ENABLED || !currentUser || !currentUser.id) return; // ratings require accounts
+  const box = $('rate-msg');
+  if (!myStars) return msg(box, 'Pick a star rating first (1–5).', 'err');
+  const { error } = await db.from('ratings').upsert({
+    bottle_id: openBottleId,
+    user_id: currentUser.id,
+    stars: myStars,
+    comment: $('rate-comment').value.trim() || null
+  }, { onConflict: 'bottle_id,user_id' });
+  if (error) return msg(box, error.message, 'err');
+  msg(box, 'Rating saved. Cheers!', 'ok');
+  const { data: r } = await db.from('ratings').select('*');
+  ratingsByBottle = {};
+  (r || []).forEach(rt => (ratingsByBottle[rt.bottle_id] = ratingsByBottle[rt.bottle_id] || []).push(rt));
+  $('reviews').innerHTML = renderReviews(openBottleId);
+  renderGrid();
+}
+
+function closeModal() {
+  $('modal-back').classList.add('hidden');
+  document.body.style.overflow = '';
+  openBottleId = null;
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+// ---------- Aidan (curated guide — v1 runs without an AI server) ----------
+let aidanGreeted = false;
+const AIDAN_CHIPS = ["I'm new to whiskey", "Something smooth", "Bourbon vs scotch?", "I like smoky", "Best for cocktails", "Gift under $50"];
+
+function toggleAidan() {
+  $('aidan-panel').classList.toggle('hidden');
+  if (!$('aidan-panel').classList.contains('hidden')) $('aidan-text').focus();
+}
+
+function aidanGreetOnce() {
+  if (aidanGreeted) return;
+  aidanGreeted = true;
+  aidanSay("Hey — I'm Aidan. 🥃 Whether it's your first bottle or your fiftieth, no question here is a dumb one. Tap a shortcut below or just ask.");
+  $('aidan-chips').innerHTML = AIDAN_CHIPS.map(c => `<button onclick="aidanQuick('${c.replace(/'/g, "\\'")}')">${c}</button>`).join('');
+}
+
+function aidanSay(text) {
+  const d = document.createElement('div');
+  d.className = 'msg aidan'; d.textContent = text;
+  $('aidan-log').appendChild(d);
+  $('aidan-log').scrollTop = $('aidan-log').scrollHeight;
+}
+function aidanUser(text) {
+  const d = document.createElement('div');
+  d.className = 'msg user'; d.textContent = text;
+  $('aidan-log').appendChild(d);
+  $('aidan-log').scrollTop = $('aidan-log').scrollHeight;
+}
+function aidanQuick(text) { aidanUser(text); setTimeout(() => aidanSay(aidanBrain(text)), 350); }
+function aidanSend() {
+  const t = $('aidan-text').value.trim();
+  if (!t) return;
+  $('aidan-text').value = '';
+  aidanUser(t);
+  setTimeout(() => aidanSay(aidanBrain(t)), 350);
+}
+
+function pickByType(type) { return bottles.filter(b => b.type === type).sort((a,b) => (a.rarity||1)-(b.rarity||1)); }
+function cheapest(list) { return list.slice().sort((a,b) => (a.price||999)-(b.price||999)); }
+
+function aidanBrain(input) {
+  const q = input.toLowerCase();
+  const has = (...words) => words.some(w => q.includes(w));
+
+  if (has('new', 'beginner', 'start', 'first', 'never')) {
+    const easy = bottles.filter(b => (b.rarity || 1) <= 1);
+    const pick = easy[0] || bottles[0];
+    return "Welcome in — you picked a great hobby. My advice for a first bottle: go soft and sweet, not smoky. " +
+      (pick ? `On our shelf, ${pick.name} (~$${Number(pick.price).toFixed(0)}) is a perfect starting point. ` : '') +
+      "Try it three ways: a small sip neat, then with one big ice cube, then in a simple cocktail. You'll learn what you like fast.";
+  }
+  if (has('smooth', 'easy', 'gentle', 'sweet', 'not strong')) {
+    return "For smooth and easygoing, look for two words on the label: 'wheated' (bourbon made with wheat — softer and sweeter, like Maker's Mark) or 'Speyside' (the fruity, smoke-free region of scotch, like The Glenlivet 12). Both are on the shelf here — tap them to see how to serve them.";
+  }
+  if (has('smoky', 'smoke', 'peat', 'islay', 'campfire')) {
+    return "A smoke lover! The word you want is 'peat' — Islay scotches like Lagavulin 16 are the deep end (campfire, ocean, iodine). If you're peat-curious but not committed, try a Penicillin cocktail with Monkey Shoulder and just a float of smoky scotch on top. Best gateway drink ever made.";
+  }
+  if (has('bourbon vs', 'vs scotch', 'difference', 'scotch vs', 'rye vs', 'what is bourbon', 'what is scotch', 'what is rye')) {
+    return "Quick version:\n• Bourbon — American, at least 51% corn, new charred oak barrels. Sweet: vanilla, caramel.\n• Rye — at least 51% rye grain. Spicier: pepper, cinnamon. Great in cocktails.\n• Scotch — made in Scotland, usually malted barley. Ranges from fruity (Speyside) to smoky (Islay).\n• Irish — usually triple-distilled, smooth and creamy.\nSame family, different accents.";
+  }
+  if (has('cocktail', 'mix', 'drink', 'recipe', 'old fashioned', 'manhattan')) {
+    return "Three cocktails cover 90% of whiskey drinking:\n• Old Fashioned — bourbon, sugar, bitters. The classic.\n• Manhattan — rye, sweet vermouth, bitters. Elegant.\n• Highball — whiskey and soda. Effortless.\nEvery bottle on the shelf lists recipes matched to it — open one and scroll to 'Make something with it.'";
+  }
+  if (has('gift', 'present', 'dad', 'friend', 'boss')) {
+    const gifts = cheapest(bottles.filter(b => b.price >= 30 && b.price <= 55));
+    return "Gifting rule: buy a step above what they'd buy themselves, in a style they already like. " +
+      (gifts.length ? `Under $55 on our shelf, ${gifts[0].name} and ${gifts[1] ? gifts[1].name : 'Woodford Reserve'} both look and drink like a gift. ` : '') +
+      "If they love smoke, Lagavulin 16 is the showstopper.";
+  }
+  if (has('cheap', 'budget', 'affordable', 'under')) {
+    const c = cheapest(bottles).slice(0, 3);
+    return "Good whiskey doesn't have to hurt. " + (c.length ? `The best value on our shelf right now: ${c.map(b => `${b.name} ($${Number(b.price).toFixed(0)})`).join(', ')}.` : '') + " Under $35 is a sweet spot with almost no bad choices.";
+  }
+  if (has('rare', 'allocated', 'blanton', 'hard to find', 'unicorn')) {
+    return "Rarity is half the fun and half the frustration. On every bottle page, the little pour gauge shows how hard it is to find — from 'everyday find' to 'unicorn.' Pro tip: allocated bottles (like Blanton's) show up at random, so befriend your local shop and ask when deliveries land. Never pay double retail; there's always a similar bottle that isn't hyped.";
+  }
+  if (has('neat', 'ice', 'rocks', 'water', 'how to drink', 'how do i drink')) {
+    return "There's no wrong way, but here's the pro move: first sip always neat (nothing added) to meet the whiskey as-is. Then add a few drops of water — it genuinely opens up flavor. One big cube if you like it cold and mellow. Anyone who tells you ice is a crime is being dramatic.";
+  }
+  if (has('thanks', 'thank you', 'cheers')) {
+    return "Cheers! 🥃 I'm here whenever a bottle stumps you.";
+  }
+  return "Great question. I'm sharpest on: picking a first bottle, smooth vs smoky, bourbon/scotch/rye differences, cocktail matches, gifts, and budget picks — try one of those, or tap any bottle on the shelf and hit 'Ask Aidan about this bottle' and I'll break it down for you.";
+}
+
+function aidanAboutBottle(id) {
+  const b = bottles.find(x => x.id === id);
+  if (!b) return;
+  closeModal();
+  $('aidan-panel').classList.remove('hidden');
+  aidanGreetOnce();
+  aidanUser('Tell me about ' + b.name);
+  const rar = RARITY[b.rarity] || RARITY[1];
+  const firstCocktail = Array.isArray(b.cocktails) && b.cocktails[0] ? b.cocktails[0].name : null;
+  const avg = avgFor(b.id);
+  setTimeout(() => aidanSay(
+    `${b.name} — ${b.type.toLowerCase()} from ${b.company}, usually around $${Number(b.price).toFixed(0)}.\n\n` +
+    `Expect: ${b.tasting_notes}.\n` +
+    `Availability: ${rar[0].toLowerCase()} — ${rar[1].toLowerCase()}.\n` +
+    (firstCocktail ? `If you take it home, start with a ${firstCocktail} — the recipe's on the bottle page.\n` : '') +
+    (avg ? `Members here rate it ${avg.toFixed(1)}/5.` : `No member ratings yet — you could be the first.`)
+  ), 400);
+}
+
+// ---------- utils ----------
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+</script>
+</body>
+</html>
