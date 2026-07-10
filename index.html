@@ -647,7 +647,7 @@ function renderGrid() {
         <h3>${esc(b.name)}</h3>
         <div class="company">${esc(b.company)}</div>
         <div class="meta">
-          <span class="price">${b.price != null ? '$' + Number(b.price).toFixed(2) : '—'}</span>
+        <!--  <span class="price">${b.price != null ? '$' + Number(b.price).toFixed(2) : '—'}</span> -->
           <span class="stars">${avg ? starString(avg) + ` <span class="count">(${(ratingsByBottle[b.id]||[]).length})</span>` : '<span class="count">No ratings yet</span>'}</span>
         </div>
       </div>
