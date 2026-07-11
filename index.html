@@ -26,6 +26,7 @@
   --line: rgba(243, 233, 210, 0.13);
   --danger: #d96b4f;
   --ok: #8fae6b;
+  --nav-bg: #191009;
   --radius: 10px;
 }
 
@@ -43,20 +44,13 @@ body.light {
   --line: rgba(23, 34, 52, 0.16);
   --danger: #b34a2e;
   --ok: #4d807d;            /* teal */
+  --nav-bg: #fbe5c6;
 }
 body.light .type-tag { color: #4d807d; border-color: rgba(96, 143, 141, 0.55); }
 body.light .badge-beginner { background: #608f8d; color: #fff; }
 body.light .msg.user { background: rgba(96, 143, 141, 0.14); border-color: rgba(96, 143, 141, 0.4); }
-body.light #site-nav .links { box-shadow: 0 18px 40px rgba(23, 34, 52, 0.16); }
-body.light .modal, body.light #theme-toggle {
-  position: fixed; right: 24px; bottom: 24px; z-index: 79;
-  width: 48px; height: 48px; border-radius: 50%;
-  background: var(--barrel-2); border: 1px solid var(--line); color: var(--paper);
-  font-size: 20px; cursor: pointer; box-shadow: 0 8px 24px rgba(0,0,0,0.35);
-  display: flex; align-items: center; justify-content: center;
-}
-#theme-toggle:hover { border-color: var(--amber); }
-#aidan-panel { box-shadow: 0 24px 70px rgba(23, 34, 52, 0.22); }
+@media (max-width: 767px) { body.light #site-nav .links { box-shadow: 0 18px 40px rgba(23, 34, 52, 0.16); } }
+body.light .modal, body.light #aidan-panel { box-shadow: 0 24px 70px rgba(23, 34, 52, 0.22); }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 html { scroll-behavior: smooth; }
@@ -132,8 +126,7 @@ a { color: var(--amber); }
   position: sticky; top: 0; z-index: 60;
   display: flex; align-items: center; gap: 22px;
   padding: 14px 28px;
-  background: rgba(25, 16, 9, 0.94); backdrop-filter: blur(8px);
-  border-bottom: 1px solid var(--line);
+  background: var(--nav-bg);
 }
 .wordmark {
   font-family: 'Fraunces', serif; font-weight: 700; font-size: 21px;
@@ -525,6 +518,14 @@ a { color: var(--amber); }
 /* ============================================================
    AIDAN (global floating panel)
    ============================================================ */
+#theme-toggle {
+  position: fixed; right: 24px; bottom: 24px; z-index: 79;
+  border-radius: 30px; padding: 11px 18px;
+  background: var(--barrel-2); border: 1px solid var(--line); color: var(--paper);
+  font-size: 13px; font-weight: 700; letter-spacing: 0.02em; cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+}
+#theme-toggle:hover { border-color: var(--amber); }
 #aidan-panel {
   position: fixed; right: 24px; bottom: 84px; z-index: 80;
   width: min(380px, calc(100vw - 40px)); height: min(540px, 70vh); height: min(540px, 70dvh);
@@ -705,7 +706,7 @@ a { color: var(--amber); }
   .rate-row button { font-size: 36px; }        /* fatter tap targets for stars */
 
   /* ---- Aidan: full-width sheet on phones ---- */
-  #theme-toggle { right: 16px; bottom: max(16px, env(safe-area-inset-bottom)); width: 44px; height: 44px; }
+  #theme-toggle { right: 16px; bottom: max(16px, env(safe-area-inset-bottom)); padding: 11px 16px; }
   #aidan-panel {
     right: 10px; left: 10px; width: auto;
     bottom: calc(max(16px, env(safe-area-inset-bottom)) + 58px);
@@ -816,7 +817,7 @@ a { color: var(--amber); }
 </div>
 
 <!-- ============================ AIDAN (global) ============================ -->
-<button id="theme-toggle" onclick="toggleTheme()" title="Switch color scheme" aria-label="Switch color scheme">☀️</button>
+<button id="theme-toggle" onclick="toggleTheme()" title="Switch color scheme" aria-label="Switch color scheme">Light Mode</button>
 <div id="aidan-panel" class="hidden">
   <div class="aidan-head">
     <div class="avatar">A</div>
@@ -2530,7 +2531,7 @@ applyTheme(theme);
 function applyTheme(t){
   document.body.classList.toggle('light', t === 'light');
   const btn = $('theme-toggle');
-  if (btn) btn.textContent = t === 'light' ? '🌙' : '☀️';
+  if (btn) btn.textContent = t === 'light' ? 'Dark Mode' : 'Light Mode';
 }
 function toggleTheme(){
   theme = theme === 'light' ? 'dark' : 'light';
