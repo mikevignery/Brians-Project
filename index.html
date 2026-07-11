@@ -1,0 +1,2280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Whiskey Horizon — Whiskey discovery for every level</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Karla:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   Whiskey Horizon — "backbar at dusk" · multi-page edition
+   Pages: Landing · About · Scotch Guide · Auth · Discover ·
+   Bottle Detail · Cocktails · Cocktail Detail · My Bar ·
+   Trending · Settings   (hash-routed, one file, no build step)
+   ============================================================ */
+:root {
+  --char: #191009;          /* deep roasted-oak background */
+  --barrel: #261811;        /* panels and cards */
+  --barrel-2: #33221a;      /* raised surfaces */
+  --amber: #e39b2d;         /* whiskey in the glass */
+  --amber-deep: #b96f1e;
+  --copper: #a9542b;
+  --paper: #f3e9d2;         /* label paper (main text) */
+  --muted: #a68f73;
+  --line: rgba(243, 233, 210, 0.13);
+  --danger: #d96b4f;
+  --ok: #8fae6b;
+  --radius: 10px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--char);
+  color: var(--paper);
+  font-family: 'Karla', system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.55;
+  min-height: 100vh;
+}
+h1, h2, h3, .display { font-family: 'Fraunces', Georgia, serif; }
+button { font-family: inherit; cursor: pointer; }
+input, select, textarea { font-family: inherit; }
+a { color: var(--amber); }
+:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+.hidden { display: none !important; }
+.muted { color: var(--muted); }
+
+/* ---------- shared form styles ---------- */
+.field { margin-bottom: 14px; }
+.field label {
+  display: block; font-size: 12px; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 5px;
+}
+.field input, .field textarea, .field select {
+  width: 100%; padding: 11px 12px;
+  background: var(--char); color: var(--paper);
+  border: 1px solid var(--line); border-radius: 8px; font-size: 15px;
+}
+.field input:focus, .field textarea:focus, .field select:focus { border-color: var(--amber); outline: none; }
+.field .hint { font-size: 12.5px; color: var(--muted); margin-top: 4px; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+.btn {
+  display: inline-block; padding: 12px 22px; border-radius: 8px;
+  border: none; font-weight: 700; font-size: 15px;
+  background: var(--amber); color: #241505;
+  transition: transform 0.12s ease, background 0.12s ease;
+  text-decoration: none;
+}
+.btn:hover { background: #f0ab3e; transform: translateY(-1px); }
+.btn.full { width: 100%; }
+.btn.sm { padding: 8px 14px; font-size: 13.5px; }
+.btn.ghost {
+  background: transparent; color: var(--paper);
+  border: 1px solid var(--line);
+}
+.btn.ghost:hover { border-color: var(--amber); color: var(--amber); background: transparent; }
+.link-btn { background: none; border: none; color: var(--amber); font-size: 13px; font-weight: 700; padding: 0; }
+.link-btn:hover { text-decoration: underline; }
+.txt-btn { background: none; border: 1px solid var(--line); color: var(--muted); border-radius: 7px; padding: 6px 12px; font-size: 13px; font-weight: 700; }
+.txt-btn:hover { color: var(--amber); border-color: var(--amber); }
+.txt-btn.on { color: var(--amber); border-color: var(--amber); }
+.form-msg { margin-top: 12px; font-size: 14px; padding: 10px 12px; border-radius: 8px; display: none; }
+.form-msg.err { display: block; background: rgba(217,107,79,0.12); color: var(--danger); border: 1px solid rgba(217,107,79,0.35); }
+.form-msg.ok { display: block; background: rgba(143,174,107,0.12); color: var(--ok); border: 1px solid rgba(143,174,107,0.35); }
+
+/* ---------- setup notice ---------- */
+#setup-notice { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 30px; }
+#setup-notice .box { max-width: 520px; text-align: center; background: var(--barrel); border: 1px solid var(--line); border-radius: var(--radius); padding: 40px; }
+.logo-img { height: 38px; width: auto; display: block; }
+.logo-img.lg { height: 64px; }
+
+/* ============================================================
+   SITE NAV (public + logged-in variants)
+   ============================================================ */
+#site-nav {
+  position: sticky; top: 0; z-index: 60;
+  display: flex; align-items: center; gap: 22px;
+  padding: 14px 28px;
+  background: rgba(25, 16, 9, 0.94); backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--line);
+}
+.wordmark {
+  font-family: 'Fraunces', serif; font-weight: 700; font-size: 21px;
+  letter-spacing: 0.01em; color: var(--paper); text-decoration: none; white-space: nowrap;
+}
+.wordmark .dot { color: var(--amber); }
+#site-nav .links { display: flex; gap: 4px; flex: 1; }
+#site-nav .links a {
+  color: var(--muted); text-decoration: none; font-size: 14.5px; font-weight: 700;
+  padding: 8px 12px; border-radius: 7px; position: relative;
+}
+#site-nav .links a:hover { color: var(--paper); }
+#site-nav .links a.active { color: var(--amber); }
+#site-nav .links a.active::after {
+  content: ''; position: absolute; left: 12px; right: 12px; bottom: 2px;
+  height: 2px; background: var(--amber); border-radius: 2px;
+}
+#site-nav .right { display: flex; align-items: center; gap: 10px; }
+#site-nav .who { color: var(--muted); font-size: 13.5px; white-space: nowrap; }
+.aidan-nav-btn {
+  background: linear-gradient(120deg, rgba(227,155,45,0.18), rgba(169,84,43,0.18));
+  border: 1px solid rgba(227,155,45,0.5); color: var(--amber);
+  border-radius: 8px; padding: 8px 14px; font-weight: 700; font-size: 14px;
+}
+.aidan-nav-btn:hover { background: rgba(227,155,45,0.28); }
+#nav-burger { display: none; background: none; border: 1px solid var(--line); color: var(--paper); border-radius: 7px; padding: 7px 11px; font-size: 17px; }
+
+/* ============================================================
+   PAGE SHELL
+   ============================================================ */
+#page { min-height: calc(100vh - 63px); }
+.wrap { max-width: 1220px; margin: 0 auto; padding: 0 28px; }
+.page-head { padding: 34px 0 8px; }
+.page-head h1 { font-size: clamp(26px, 4vw, 36px); }
+.page-head p { color: var(--muted); margin-top: 4px; max-width: 640px; }
+.crumb { padding: 22px 0 0; font-size: 13.5px; color: var(--muted); }
+.crumb a { color: var(--muted); text-decoration: none; }
+.crumb a:hover { color: var(--amber); }
+.crumb b { color: var(--paper); font-weight: 700; }
+
+/* ============================================================
+   LANDING PAGE
+   ============================================================ */
+.hero { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 46px; align-items: center; padding: 64px 0 54px; }
+.hero h1 { font-size: clamp(34px, 5vw, 54px); line-height: 1.08; }
+.hero h1 em { font-style: italic; color: var(--amber); }
+.hero .tagline {
+  margin: 18px 0 6px; font-family: 'Fraunces', serif; font-size: 19px; color: var(--paper);
+}
+.hero .sub { color: var(--muted); font-size: 16.5px; margin-top: 10px; max-width: 520px; }
+.hero .ctas { display: flex; gap: 12px; margin-top: 26px; flex-wrap: wrap; }
+.hero-shelf {
+  background: radial-gradient(ellipse 90% 70% at 50% 110%, rgba(227,155,45,0.14), transparent 65%), var(--barrel);
+  border: 1px solid var(--line); border-radius: 14px; padding: 22px;
+}
+.hero-shelf .row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.hero-shelf .mini {
+  background: var(--barrel-2); border: 1px solid var(--line); border-radius: 10px;
+  padding: 14px 12px; text-align: center;
+}
+.hero-shelf .mini .glass { font-size: 30px; }
+.hero-shelf .mini b { display: block; font-size: 13.5px; margin-top: 8px; }
+.hero-shelf .mini small { color: var(--muted); font-size: 12px; }
+.hero-shelf .caption { text-align: center; color: var(--muted); font-size: 12.5px; margin-top: 14px; }
+.value-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; padding: 10px 0 54px; }
+.value-card { background: var(--barrel); border: 1px solid var(--line); border-radius: var(--radius); padding: 24px 20px; }
+.value-card .ico { font-size: 26px; }
+.value-card h3 { font-size: 17px; margin: 12px 0 6px; }
+.value-card p { color: var(--muted); font-size: 14px; }
+.featured { padding: 8px 0 60px; }
+.featured h2 { font-size: 24px; margin-bottom: 4px; }
+.featured .lede { color: var(--muted); margin-bottom: 20px; }
+.featured .strip { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; }
+.f-card { background: var(--barrel); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.f-card .img { height: 120px; display: flex; align-items: center; justify-content: center; font-size: 40px; background: linear-gradient(160deg, var(--barrel-2), var(--barrel)); border-bottom: 1px solid var(--line); }
+.f-card .body { padding: 12px 14px; }
+.f-card b { font-size: 14.5px; display: block; }
+.f-card small { color: var(--muted); font-size: 12.5px; }
+.site-footer { border-top: 1px solid var(--line); padding: 26px 0 40px; color: var(--muted); font-size: 13px; }
+.site-footer .wrap { display: flex; flex-wrap: wrap; gap: 8px 22px; align-items: center; justify-content: space-between; }
+.site-footer a { color: var(--muted); text-decoration: none; }
+.site-footer a:hover { color: var(--amber); }
+
+/* ============================================================
+   ABOUT PAGE
+   ============================================================ */
+.about-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; padding: 26px 0 30px; }
+.step-card { background: var(--barrel); border: 1px solid var(--line); border-radius: var(--radius); padding: 24px 20px; }
+.step-card .num { font-family: 'Fraunces', serif; color: var(--amber); font-size: 30px; font-weight: 700; }
+.step-card h3 { font-size: 17px; margin: 8px 0 6px; }
+.step-card p { color: var(--muted); font-size: 14.5px; }
+.about-band { background: var(--barrel); border: 1px solid var(--line); border-radius: 14px; padding: 34px; margin: 12px 0 60px; display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 34px; align-items: center; }
+.about-band h2 { font-size: 24px; margin-bottom: 8px; }
+.about-band p { color: var(--muted); }
+
+/* ============================================================
+   AUTH PAGES (sign up / log in) — two column like the wireframe
+   ============================================================ */
+.auth-layout { min-height: calc(100vh - 63px); display: grid; grid-template-columns: 1.05fr 1fr; }
+.auth-hero {
+  padding: 56px; display: flex; flex-direction: column; justify-content: space-between;
+  background: radial-gradient(ellipse 90% 60% at 20% 110%, rgba(227,155,45,0.16), transparent 60%), var(--char);
+  border-right: 1px solid var(--line);
+}
+.auth-hero h1 { font-size: clamp(28px, 3.6vw, 42px); line-height: 1.12; margin-bottom: 16px; max-width: 480px; }
+.auth-hero h1 em { font-style: italic; color: var(--amber); }
+.auth-hero .sub { color: var(--muted); font-size: 16px; max-width: 460px; }
+.hero-points { margin-top: 30px; display: grid; gap: 14px; max-width: 460px; }
+.hero-points > div { display: flex; gap: 14px; align-items: baseline; font-size: 15px; }
+.hero-points .tick { font-family: 'Fraunces', serif; color: var(--amber); font-weight: 700; font-size: 14px; }
+.age-note { color: var(--muted); font-size: 12.5px; margin-top: 30px; }
+.auth-panel { display: flex; align-items: center; justify-content: center; padding: 46px 30px; }
+.auth-card { width: 100%; max-width: 470px; background: var(--barrel); border: 1px solid var(--line); border-radius: 14px; padding: 34px; }
+.auth-card h2 { font-size: 24px; margin-bottom: 4px; }
+.auth-card .lede { color: var(--muted); font-size: 14.5px; margin-bottom: 22px; }
+.legal-line { color: var(--muted); font-size: 12px; margin-top: 14px; text-align: center; }
+.dob-row { display: grid; grid-template-columns: 1.3fr 1fr 1.1fr; gap: 10px; }
+.age-badge { display: flex; gap: 8px; align-items: center; font-size: 13px; color: var(--ok); background: rgba(143,174,107,0.1); border: 1px solid rgba(143,174,107,0.3); border-radius: 8px; padding: 9px 12px; margin: 4px 0 16px; }
+
+/* ============================================================
+   DISCOVER — sidebar + grid
+   ============================================================ */
+.discover-layout { display: grid; grid-template-columns: 235px 1fr; gap: 30px; padding: 26px 0 60px; align-items: start; }
+.sidebar { position: sticky; top: 84px; }
+.sidebar h4 { font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+.side-group { margin-bottom: 26px; }
+.side-list button {
+  display: block; width: 100%; text-align: left; background: none; border: none;
+  color: var(--muted); font-size: 14.5px; font-weight: 500; padding: 7px 10px; border-radius: 7px;
+}
+.side-list button:hover { color: var(--paper); background: var(--barrel); }
+.side-list button.active { color: var(--amber); background: var(--barrel); font-weight: 700; }
+.side-check { display: flex; align-items: center; gap: 9px; color: var(--paper); font-size: 14.5px; padding: 6px 2px; cursor: pointer; }
+.side-check input { accent-color: var(--amber); width: 16px; height: 16px; }
+.controls-row { display: flex; gap: 12px; align-items: center; margin-bottom: 8px; flex-wrap: wrap; }
+.controls-row input[type=search] {
+  flex: 1; min-width: 220px; padding: 12px 15px; background: var(--barrel); color: var(--paper);
+  border: 1px solid var(--line); border-radius: 9px; font-size: 15px;
+}
+.controls-row input[type=search]:focus { border-color: var(--amber); outline: none; }
+.result-row { display: flex; align-items: center; justify-content: space-between; margin: 6px 0 18px; gap: 12px; flex-wrap: wrap; }
+.result-row .count { color: var(--muted); font-size: 14px; }
+.result-row select {
+  background: var(--barrel); color: var(--paper); border: 1px solid var(--line);
+  border-radius: 8px; padding: 9px 12px; font-size: 14px;
+}
+.grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.card {
+  background: var(--barrel); border: 1px solid var(--line); border-radius: var(--radius);
+  overflow: hidden; text-align: left; padding: 0; color: var(--paper);
+  transition: transform 0.14s ease, border-color 0.14s ease; position: relative; display: block; width: 100%;
+}
+.card:hover { transform: translateY(-3px); border-color: rgba(227,155,45,0.55); }
+.card .img { height: 155px; background: linear-gradient(160deg, var(--barrel-2), var(--barrel)); display: flex; align-items: center; justify-content: center; position: relative; border-bottom: 1px solid var(--line); }
+.card .img img { width: 100%; height: 100%; object-fit: cover; }
+.card .img .placeholder { font-family: 'Fraunces', serif; font-size: 34px; color: rgba(243,233,210,0.28); font-weight: 700; }
+.card .badge-beginner {
+  position: absolute; top: 10px; left: 10px; background: var(--amber); color: #241505;
+  font-size: 10.5px; font-weight: 700; letter-spacing: 0.08em; padding: 4px 8px; border-radius: 5px;
+}
+.card .card-fav { position: absolute; top: 10px; right: 10px; color: var(--amber); font-size: 16px; }
+.card .sel-badge {
+  position: absolute; bottom: 10px; right: 10px; width: 26px; height: 26px; border-radius: 50%;
+  background: rgba(25,16,9,0.85); border: 1.5px solid var(--amber); color: var(--amber);
+  display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px;
+}
+.card.selected { border-color: var(--amber); }
+.card .body { padding: 13px 15px 15px; }
+.type-tag { display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: var(--amber); }
+.card h3 { font-size: 16.5px; margin: 3px 0 1px; }
+.card .company { color: var(--muted); font-size: 13px; }
+.card .meta { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; font-size: 13.5px; }
+.card .price { font-weight: 700; }
+.stars { color: var(--amber); letter-spacing: 1px; }
+.stars .count { color: var(--muted); letter-spacing: 0; }
+.empty-state { grid-column: 1 / -1; text-align: center; color: var(--muted); padding: 60px 20px; }
+#match-banner { margin: 0 0 18px; }
+#match-banner .inner {
+  display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center;
+  background: linear-gradient(120deg, rgba(227,155,45,0.13), rgba(169,84,43,0.1));
+  border: 1px solid rgba(227,155,45,0.4); border-radius: 10px; padding: 13px 17px; font-size: 14px;
+}
+#match-banner b { color: var(--amber); }
+#match-banner button { background: none; border: none; color: var(--amber); font-weight: 700; font-size: 13.5px; text-decoration: underline; }
+#compare-tray {
+  position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%); z-index: 70;
+  display: flex; gap: 14px; align-items: center;
+  background: var(--barrel-2); border: 1px solid var(--amber); border-radius: 12px;
+  padding: 12px 18px; box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+}
+#compare-tray span { font-size: 13.5px; color: var(--muted); }
+
+/* ============================================================
+   BOTTLE DETAIL PAGE — two column + tabs
+   ============================================================ */
+.bottle-layout { display: grid; grid-template-columns: 360px 1fr; gap: 36px; padding: 22px 0 60px; align-items: start; }
+.bottle-left { position: sticky; top: 84px; }
+.bottle-img {
+  height: 300px; border-radius: 14px; border: 1px solid var(--line);
+  background: linear-gradient(160deg, var(--barrel-2), var(--barrel));
+  display: flex; align-items: center; justify-content: center; overflow: hidden; margin-bottom: 18px;
+}
+.bottle-img img { width: 100%; height: 100%; object-fit: cover; }
+.bottle-img .placeholder { font-family: 'Fraunces', serif; font-size: 64px; color: rgba(243,233,210,0.25); font-weight: 700; }
+.spec-table { width: 100%; border-collapse: collapse; font-size: 14.5px; margin: 14px 0; }
+.spec-table td { padding: 8px 0; border-bottom: 1px solid var(--line); }
+.spec-table td:first-child { color: var(--muted); width: 45%; }
+.notes { display: flex; flex-wrap: wrap; gap: 7px; margin: 14px 0; }
+.notes span { background: var(--barrel-2); border: 1px solid var(--line); border-radius: 20px; padding: 5px 13px; font-size: 13px; }
+.pour-gauge { display: flex; gap: 13px; align-items: center; margin: 16px 0; }
+.bottle-shape { width: 26px; height: 62px; border: 2px solid var(--muted); border-radius: 5px 5px 8px 8px; position: relative; overflow: hidden; flex-shrink: 0; }
+.bottle-shape .fill { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(180deg, var(--amber), var(--amber-deep)); }
+.pour-gauge .label b { display: block; font-size: 14.5px; }
+.pour-gauge .label small { color: var(--muted); font-size: 12.5px; }
+.detail-tabs { display: flex; gap: 6px; border-bottom: 1px solid var(--line); margin-bottom: 22px; }
+.detail-tabs button {
+  background: none; border: none; color: var(--muted); font-size: 15px; font-weight: 700;
+  padding: 12px 16px; border-bottom: 2px solid transparent; margin-bottom: -1px;
+}
+.detail-tabs button:hover { color: var(--paper); }
+.detail-tabs button.active { color: var(--amber); border-bottom-color: var(--amber); }
+.aidan-take {
+  background: linear-gradient(120deg, rgba(227,155,45,0.12), rgba(169,84,43,0.09));
+  border: 1px solid rgba(227,155,45,0.4); border-radius: 10px; padding: 16px 18px; margin-bottom: 22px;
+}
+.aidan-take .tag { font-size: 11px; letter-spacing: 0.12em; font-weight: 700; color: var(--amber); }
+.aidan-take p { font-family: 'Fraunces', serif; font-size: 17px; font-style: italic; margin-top: 6px; }
+.detail-section { margin-bottom: 26px; }
+.detail-section h3 { font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 9px; }
+.detail-section p { font-size: 15.5px; }
+.cocktail-block { background: var(--barrel); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; margin-bottom: 12px; }
+.cocktail-block b { font-family: 'Fraunces', serif; font-size: 16px; }
+.cocktail-block p { color: var(--muted); font-size: 14px; margin-top: 5px; }
+.cocktail-block .open-link { margin-top: 8px; display: inline-block; }
+.open-link { background: none; border: none; color: var(--amber); font-size: 13.5px; font-weight: 700; padding: 0; text-decoration: none; }
+.open-link:hover { text-decoration: underline; }
+.rate-row { display: flex; gap: 6px; margin-bottom: 14px; }
+.rate-row button { background: none; border: none; font-size: 32px; color: rgba(243,233,210,0.25); transition: color 0.1s, transform 0.1s; padding: 0 3px; }
+.rate-row button:hover { transform: scale(1.15); }
+.rate-row button.lit { color: var(--amber); }
+.review { border-top: 1px solid var(--line); padding: 13px 0; }
+.review .head { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; }
+.review .name { font-weight: 700; }
+.review p { color: var(--muted); font-size: 14px; margin-top: 4px; }
+
+/* ============================================================
+   COCKTAILS — sidebar + 3-col grid, and detail w/ Aidan panel
+   ============================================================ */
+.grid.cocktails { grid-template-columns: repeat(3, 1fr); }
+.card .diff-line { display: flex; gap: 8px; align-items: center; margin-top: 9px; font-size: 13px; color: var(--muted); }
+.diff-pill { font-size: 11px; font-weight: 700; letter-spacing: 0.05em; padding: 3px 9px; border-radius: 20px; border: 1px solid; }
+.diff-pill.easy { color: var(--ok); border-color: rgba(143,174,107,0.5); }
+.diff-pill.medium { color: var(--amber); border-color: rgba(227,155,45,0.5); }
+.diff-pill.hard { color: var(--danger); border-color: rgba(217,107,79,0.5); }
+.cd-layout { display: grid; grid-template-columns: 1fr 370px; gap: 32px; padding: 22px 0 60px; align-items: start; }
+.cd-main h1 { font-size: clamp(26px, 3.5vw, 36px); }
+.cd-sub { color: var(--muted); margin: 6px 0 16px; font-size: 15px; }
+.ing-table { width: 100%; border-collapse: collapse; font-size: 15px; margin: 8px 0 4px; }
+.ing-table td { padding: 10px 4px; border-bottom: 1px solid var(--line); }
+.ing-table td:last-child { text-align: right; color: var(--muted); white-space: nowrap; }
+.method-step { display: flex; gap: 15px; padding: 12px 0; border-bottom: 1px solid var(--line); align-items: baseline; }
+.method-step .n { font-family: 'Fraunces', serif; color: var(--amber); font-weight: 700; font-size: 18px; flex-shrink: 0; width: 22px; }
+.cd-ctas { display: flex; gap: 12px; margin-top: 24px; flex-wrap: wrap; }
+.pair-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--line); }
+.pair-row .info b { display: block; font-size: 15px; }
+.pair-row .info small { color: var(--muted); font-size: 13px; }
+.aidan-embed { background: var(--barrel); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; position: sticky; top: 84px; display: flex; flex-direction: column; height: min(600px, calc(100vh - 110px)); }
+
+/* ============================================================
+   MY BAR
+   ============================================================ */
+.subtabs { display: flex; gap: 6px; border-bottom: 1px solid var(--line); margin: 18px 0 24px; }
+.subtabs button { background: none; border: none; color: var(--muted); font-size: 15px; font-weight: 700; padding: 11px 15px; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.subtabs button.active { color: var(--amber); border-bottom-color: var(--amber); }
+.bar-table { width: 100%; border-collapse: collapse; font-size: 14.5px; }
+.bar-table th { text-align: left; font-size: 11.5px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--muted); padding: 10px 12px; border-bottom: 1px solid var(--line); }
+.bar-table td { padding: 14px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.bar-table .bname b { display: block; font-size: 15px; }
+.bar-table .note-input { width: 100%; background: none; border: none; border-bottom: 1px dashed transparent; color: var(--muted); font-size: 13px; padding: 2px 0; }
+.bar-table .note-input:focus { outline: none; border-bottom-color: var(--amber); color: var(--paper); }
+.bar-table .acts { white-space: nowrap; }
+.bar-table .acts button { margin-left: 10px; }
+.inline-stars button { background: none; border: none; font-size: 18px; color: rgba(243,233,210,0.25); padding: 0 1px; }
+.inline-stars button.lit { color: var(--amber); }
+.stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 30px; }
+.stat-card { background: var(--barrel); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; text-align: center; }
+.stat-card .big { font-family: 'Fraunces', serif; font-size: 32px; font-weight: 700; color: var(--amber); }
+.stat-card small { color: var(--muted); font-size: 13px; }
+.log-cta { display: flex; align-items: center; justify-content: space-between; gap: 16px; background: var(--barrel); border: 1px solid var(--line); border-radius: 10px; padding: 18px 20px; margin-top: 26px; flex-wrap: wrap; }
+.dram-entry { border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; margin-bottom: 12px; background: var(--barrel); }
+.dram-entry .head { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.dram-entry .when { color: var(--muted); font-size: 13px; }
+.dram-entry p { color: var(--muted); font-size: 14px; margin-top: 6px; }
+.account-list-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--line); }
+.account-list-row .info b { display: block; font-size: 15px; }
+.account-list-row .info small { color: var(--muted); font-size: 13px; }
+
+/* ============================================================
+   TRENDING
+   ============================================================ */
+.trend-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; padding: 26px 0 60px; align-items: start; }
+.trend-panel { background: var(--barrel); border: 1px solid var(--line); border-radius: 14px; padding: 24px; }
+.trend-panel h3 { font-size: 18px; margin-bottom: 14px; }
+.trend-row { display: flex; align-items: center; gap: 14px; padding: 11px 0; border-bottom: 1px solid var(--line); }
+.trend-row .rank { font-family: 'Fraunces', serif; color: var(--amber); font-weight: 700; font-size: 18px; width: 26px; flex-shrink: 0; }
+.trend-row .info { flex: 1; } .trend-row .info b { display: block; font-size: 15px; }
+.trend-row .info small { color: var(--muted); font-size: 12.5px; }
+
+/* ============================================================
+   SCOTCH GUIDE / PEAT MAP
+   ============================================================ */
+.guide-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; padding: 26px 0 20px; align-items: start; }
+.map-panel { background: var(--barrel); border: 1px solid var(--line); border-radius: 14px; padding: 22px; position: sticky; top: 84px; }
+.map-panel h3 { font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); text-align: center; margin-bottom: 4px; }
+.map-panel .map-hint { text-align: center; color: var(--muted); font-size: 12.5px; margin-bottom: 8px; }
+#scotland-map { width: 100%; height: auto; display: block; }
+#scotland-map .land { fill: var(--barrel-2); stroke: var(--line); stroke-width: 1.5; }
+#scotland-map .dist { cursor: pointer; }
+#scotland-map .dist circle.dot { stroke: var(--char); stroke-width: 1.5; transition: r 0.12s; }
+#scotland-map .dist:hover circle.dot { r: 8; }
+#scotland-map .dist.sel circle.dot { stroke: var(--paper); stroke-width: 2; }
+#scotland-map .dist text { fill: var(--muted); font-size: 10.5px; font-family: 'Karla', sans-serif; pointer-events: none; }
+#scotland-map .dist.sel text { fill: var(--paper); font-weight: 700; }
+.peat-scale { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; margin-top: 16px; }
+.peat-scale .cell { text-align: center; font-size: 11px; color: var(--muted); }
+.peat-scale .swatch { height: 14px; border-radius: 4px; margin-bottom: 5px; border: 1px solid var(--line); }
+.selected-dist { border: 1px solid rgba(227,155,45,0.45); background: linear-gradient(120deg, rgba(227,155,45,0.1), transparent); border-radius: 10px; padding: 16px 18px; margin-top: 18px; }
+.selected-dist .head { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.selected-dist b { font-family: 'Fraunces', serif; font-size: 17px; }
+.selected-dist .ppm { color: var(--amber); font-size: 13px; font-weight: 700; }
+.selected-dist p { font-style: italic; color: var(--muted); font-size: 14px; margin-top: 8px; }
+.region-card { display: flex; gap: 15px; background: var(--barrel); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; margin-bottom: 12px; }
+.region-card .ico { font-size: 24px; }
+.region-card b { display: block; font-size: 16px; font-family: 'Fraunces', serif; }
+.region-card p { color: var(--muted); font-size: 14px; margin-top: 2px; }
+.what-is-peat { background: var(--barrel); border: 1px solid var(--line); border-radius: 10px; padding: 18px 20px; margin-bottom: 22px; }
+.what-is-peat h3 { font-size: 17px; margin-bottom: 6px; }
+.what-is-peat p { color: var(--muted); font-size: 14.5px; }
+
+/* ============================================================
+   MODALS (add-bottle picker, quiz, compare, log-a-dram)
+   ============================================================ */
+.modal-back {
+  position: fixed; inset: 0; z-index: 90; background: rgba(12, 7, 3, 0.78);
+  display: flex; align-items: flex-start; justify-content: center;
+  overflow-y: auto; padding: 44px 18px;
+}
+.modal {
+  width: 100%; max-width: 620px; background: var(--barrel); border: 1px solid var(--line);
+  border-radius: 14px; padding: 28px; position: relative;
+}
+.modal.compare-modal { max-width: 1080px; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-bottom: 10px; }
+.modal-info h2 { font-size: 24px; }
+.modal-info .company { color: var(--muted); font-size: 14px; }
+.modal-section { margin-top: 22px; }
+.modal-section h3 { font-size: 17px; margin-bottom: 10px; }
+.quiz-wrap { padding: 6px 4px 10px; }
+.quiz-dots { display: flex; gap: 7px; margin-bottom: 16px; }
+.quiz-dots span { width: 26px; height: 4px; border-radius: 3px; background: var(--barrel-2); }
+.quiz-dots span.done { background: var(--amber); }
+.quiz-option {
+  display: block; width: 100%; text-align: left; background: var(--barrel-2);
+  border: 1px solid var(--line); border-radius: 10px; padding: 15px 17px;
+  color: var(--paper); font-size: 15.5px; font-weight: 700; margin-top: 10px;
+}
+.quiz-option small { display: block; color: var(--muted); font-weight: 400; font-size: 13px; margin-top: 2px; }
+.quiz-option:hover { border-color: var(--amber); }
+.compare-scroll { overflow-x: auto; }
+.compare-table { border-collapse: collapse; min-width: 640px; width: 100%; font-size: 14px; }
+.compare-table th, .compare-table td { border-bottom: 1px solid var(--line); padding: 12px 14px; text-align: left; vertical-align: top; }
+.compare-table th { min-width: 170px; }
+.compare-table .rowlabel { color: var(--muted); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap; }
+.compare-table td.best { background: rgba(227,155,45,0.08); }
+.best-tag { display: inline-block; margin-left: 8px; background: var(--amber); color: #241505; font-size: 10.5px; font-weight: 700; border-radius: 4px; padding: 2px 6px; vertical-align: middle; }
+.cb-img { height: 84px; border-radius: 8px; background: linear-gradient(160deg, var(--barrel-2), var(--barrel)); display: flex; align-items: center; justify-content: center; overflow: hidden; margin-bottom: 8px; }
+.cb-img img { width: 100%; height: 100%; object-fit: cover; }
+.cb-img .placeholder { font-family: 'Fraunces', serif; font-size: 26px; color: rgba(243,233,210,0.25); font-weight: 700; }
+.cb-name { font-family: 'Fraunces', serif; font-size: 15px; }
+.cb-co { color: var(--muted); font-size: 12px; font-weight: 400; }
+.cb-open { background: none; border: none; color: var(--amber); font-size: 12.5px; font-weight: 700; padding: 4px 0 0; }
+.cb-open:hover { text-decoration: underline; }
+
+/* ============================================================
+   AIDAN (global floating panel)
+   ============================================================ */
+#aidan-fab {
+  position: fixed; right: 24px; bottom: 24px; z-index: 80;
+  width: 56px; height: 56px; border-radius: 50%;
+  background: linear-gradient(140deg, var(--amber), var(--copper));
+  border: none; color: #241505; font-family: 'Fraunces', serif; font-weight: 700; font-size: 20px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+#aidan-panel {
+  position: fixed; right: 24px; bottom: 92px; z-index: 80;
+  width: min(380px, calc(100vw - 40px)); height: min(540px, 70vh);
+  background: var(--barrel); border: 1px solid var(--line); border-radius: 14px;
+  display: flex; flex-direction: column; overflow: hidden;
+  box-shadow: 0 18px 60px rgba(0,0,0,0.55);
+}
+.aidan-head { display: flex; gap: 11px; align-items: center; padding: 13px 15px; border-bottom: 1px solid var(--line); background: var(--barrel-2); }
+.aidan-head .avatar { width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(140deg, var(--amber), var(--copper)); color: #241505; display: flex; align-items: center; justify-content: center; font-family: 'Fraunces', serif; font-weight: 700; }
+.aidan-head b { font-size: 15px; display: block; }
+.aidan-head small { color: var(--muted); font-size: 12px; }
+.aidan-close { background: none; border: none; color: var(--muted); font-size: 16px; }
+.aidan-log { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
+.msg { max-width: 88%; padding: 10px 13px; border-radius: 12px; font-size: 14px; white-space: pre-wrap; }
+.msg.aidan { background: var(--barrel-2); border: 1px solid var(--line); align-self: flex-start; border-bottom-left-radius: 4px; }
+.msg.user { background: rgba(227,155,45,0.16); border: 1px solid rgba(227,155,45,0.35); align-self: flex-end; border-bottom-right-radius: 4px; }
+.aidan-chips { display: flex; flex-wrap: wrap; gap: 7px; padding: 0 15px 10px; }
+.aidan-chips button { background: none; border: 1px solid var(--line); color: var(--muted); border-radius: 20px; padding: 5px 11px; font-size: 12.5px; }
+.aidan-chips button:hover { color: var(--amber); border-color: var(--amber); }
+.aidan-input { display: flex; gap: 8px; padding: 11px 13px; border-top: 1px solid var(--line); }
+.aidan-input input { flex: 1; background: var(--char); border: 1px solid var(--line); border-radius: 8px; color: var(--paper); padding: 9px 12px; font-size: 14px; }
+.aidan-input input:focus { outline: none; border-color: var(--amber); }
+.aidan-input button { background: var(--amber); border: none; border-radius: 8px; color: #241505; font-weight: 700; padding: 0 15px; }
+
+/* ============================================================
+   RESPONSIVE — desktop-first, per the wireframe's breakpoints
+   ============================================================ */
+@media (max-width: 1023px) {
+  .grid { grid-template-columns: repeat(3, 1fr); }
+  .grid.cocktails { grid-template-columns: repeat(2, 1fr); }
+  .value-grid { grid-template-columns: repeat(2, 1fr); }
+  .featured .strip { grid-template-columns: repeat(3, 1fr); }
+  .discover-layout { grid-template-columns: 205px 1fr; gap: 22px; }
+  .bottle-layout { grid-template-columns: 300px 1fr; gap: 26px; }
+  .cd-layout { grid-template-columns: 1fr; }
+  .aidan-embed { position: static; height: 460px; }
+  .trend-layout, .guide-layout { grid-template-columns: 1fr; }
+  .map-panel { position: static; }
+  .about-band { grid-template-columns: 1fr; }
+}
+@media (max-width: 767px) {
+  #site-nav { padding: 12px 16px; gap: 12px; }
+  #site-nav .links {
+    display: none; position: absolute; top: 100%; left: 0; right: 0;
+    flex-direction: column; background: var(--barrel); border-bottom: 1px solid var(--line); padding: 8px 12px 14px;
+  }
+  #site-nav .links.open { display: flex; }
+  #site-nav .who { display: none; }
+  #nav-burger { display: block; }
+  .wrap { padding: 0 16px; }
+  .hero { grid-template-columns: 1fr; padding: 40px 0 34px; gap: 28px; }
+  .hero-shelf { display: none; }               /* hero is text-only above the fold on mobile */
+  .value-grid { grid-template-columns: 1fr; }
+  .featured .strip { grid-template-columns: repeat(2, 1fr); }
+  .auth-layout { grid-template-columns: 1fr; }
+  .auth-hero { display: none; }
+  .discover-layout { grid-template-columns: 1fr; }
+  .sidebar { position: static; }
+  .sidebar details { border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; background: var(--barrel); }
+  .grid { grid-template-columns: repeat(2, 1fr); gap: 11px; }
+  .grid.cocktails { grid-template-columns: 1fr; }
+  .card .img { height: 120px; }
+  .bottle-layout { grid-template-columns: 1fr; }
+  .bottle-left { position: static; }
+  .about-grid { grid-template-columns: 1fr; }
+  .stats-row { grid-template-columns: repeat(2, 1fr); }
+  .two-col, .three-col { grid-template-columns: 1fr; }
+  /* My Bar table becomes stacked cards on mobile */
+  .bar-table thead { display: none; }
+  .bar-table, .bar-table tbody, .bar-table tr, .bar-table td { display: block; width: 100%; }
+  .bar-table tr { border: 1px solid var(--line); border-radius: 10px; margin-bottom: 12px; background: var(--barrel); padding: 6px 4px; }
+  .bar-table td { border-bottom: none; padding: 7px 14px; }
+  .modal { padding: 20px 16px; }
+  #aidan-panel { height: min(460px, 62vh); }
+}
+@media (min-width: 768px) {
+  .sidebar details { border: none; padding: 0; }
+  .sidebar details > summary { display: none; }
+  .sidebar details[open] { padding: 0; }
+}
+</style>
+</head>
+<body>
+
+<!-- Shown only if the Supabase keys below haven't been filled in yet -->
+<div id="setup-notice" class="hidden">
+  <div class="box">
+    <img class="logo-img lg" style="margin:0 auto;" src="https://pqbpmcshkwdngesnlzgi.supabase.co/storage/v1/object/public/Briansimages/horizon%20logo.png" alt="Whiskey Horizon">
+    <h2 style="margin:18px 0 10px;">Almost there — one step left</h2>
+    <p style="color:var(--muted);">Open <code>index.html</code> in a text editor and paste your Supabase <b>Project URL</b> and <b>anon key</b> into the two lines near the top of the <code>&lt;script&gt;</code> section (they're clearly marked).</p>
+  </div>
+</div>
+
+<!-- ============================ SITE NAV ============================ -->
+<header id="site-nav" class="hidden">
+  <a class="wordmark" href="#/">Whiskey<span class="dot">Horizon</span></a>
+  <button id="nav-burger" onclick="document.querySelector('#site-nav .links').classList.toggle('open')" aria-label="Menu">☰</button>
+  <nav class="links" id="nav-links"></nav>
+  <div class="right" id="nav-right"></div>
+</header>
+
+<!-- ============================ PAGE ============================ -->
+<main id="page"></main>
+
+<!-- ============================ SITE FOOTER ============================ -->
+<footer class="site-footer hidden" id="site-footer">
+  <div class="wrap">
+    <span>© 2026 Whiskey Horizon</span>
+    <span>
+      <a href="#/about">About</a> &nbsp;·&nbsp;
+      <a href="#/scotch-guide">Scotch Guide</a> &nbsp;·&nbsp;
+      Drink Responsibly &nbsp;·&nbsp;
+      SAMHSA Helpline 1-800-662-4357
+    </span>
+  </div>
+</footer>
+
+<!-- ============================ QUIZ MODAL ============================ -->
+<div id="quiz-back" class="modal-back hidden" onclick="if(event.target===this) closeQuiz()">
+  <div class="modal" role="dialog" aria-modal="true" style="max-width:520px;">
+    <div class="modal-actions"><button class="txt-btn" onclick="closeQuiz()">Skip for now</button></div>
+    <div id="quiz-body"></div>
+  </div>
+</div>
+
+<!-- ============================ COMPARE MODAL ============================ -->
+<div id="compare-back" class="modal-back hidden" onclick="if(event.target===this) closeCompare()">
+  <div class="modal compare-modal" role="dialog" aria-modal="true">
+    <div class="modal-actions"><button class="txt-btn" onclick="closeCompare()">Close</button></div>
+    <div class="modal-info" style="padding-bottom:12px;">
+      <span class="type-tag">Side by side</span>
+      <h2>Compare bottles</h2>
+      <div class="company" id="compare-sub"></div>
+    </div>
+    <div id="compare-body"></div>
+  </div>
+</div>
+
+<!-- ============================ COMPARE TRAY ============================ -->
+<div id="compare-tray" class="hidden">
+  <span id="tray-count">0 of 5 selected</span>
+  <button class="btn sm" id="tray-go" onclick="openCompare()" disabled>Compare</button>
+  <button class="btn ghost sm" onclick="toggleCompareMode()">Cancel</button>
+</div>
+
+<!-- ============================ ADD BOTTLE PICKER (My Bar) ============================ -->
+<div id="picker-back" class="modal-back hidden" onclick="if(event.target===this) closePicker()">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-actions"><button class="txt-btn" onclick="closePicker()">Close</button></div>
+    <div class="modal-info"><span class="type-tag" id="picker-tag">Add to my bar</span><h2 id="picker-title">Pick a bottle</h2></div>
+    <div class="field" style="margin-top:14px;"><input id="picker-search" type="search" placeholder="Search the shelf…" oninput="renderPicker()"></div>
+    <div id="picker-list"></div>
+  </div>
+</div>
+
+<!-- ============================ LOG A DRAM MODAL ============================ -->
+<div id="dram-back" class="modal-back hidden" onclick="if(event.target===this) closeDram()">
+  <div class="modal" role="dialog" aria-modal="true" style="max-width:520px;">
+    <div class="modal-actions"><button class="txt-btn" onclick="closeDram()">Close</button></div>
+    <div class="modal-info"><span class="type-tag">Tasting log</span><h2>Log a dram</h2></div>
+    <div style="margin-top:16px;">
+      <div class="field"><label for="dram-bottle">Bottle</label><select id="dram-bottle"></select></div>
+      <div class="field"><label for="dram-occasion">Occasion (optional)</label><input id="dram-occasion" type="text" placeholder="Friday nightcap, birthday pour, tasting with Brian…"></div>
+      <div class="field"><label>How was it?</label>
+        <div class="rate-row" id="dram-stars">
+          <button onclick="setDramStars(1)">★</button><button onclick="setDramStars(2)">★</button><button onclick="setDramStars(3)">★</button><button onclick="setDramStars(4)">★</button><button onclick="setDramStars(5)">★</button>
+        </div>
+      </div>
+      <div class="field"><label for="dram-notes">Tasting notes (optional)</label><textarea id="dram-notes" rows="3" placeholder="What did you taste? What did you pair it with?"></textarea></div>
+      <button class="btn full" onclick="saveDram()">Save to my tasting log</button>
+      <div id="dram-msg" class="form-msg"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================ AIDAN (global) ============================ -->
+<button id="aidan-fab" class="hidden" title="Ask Aidan" onclick="toggleAidan()">A.</button>
+<div id="aidan-panel" class="hidden">
+  <div class="aidan-head">
+    <div class="avatar">A</div>
+    <div style="flex:1"><b>Aidan</b><small>Your whiskey guide — zero judgment</small></div>
+    <button class="aidan-close" onclick="toggleAidan()" aria-label="Close Aidan">✕</button>
+  </div>
+  <div id="aidan-log" class="aidan-log"></div>
+  <div class="aidan-chips" id="aidan-chips"></div>
+  <div class="aidan-input">
+    <input id="aidan-text" placeholder="Ask about whiskey…" onkeydown="if(event.key==='Enter') aidanSend()">
+    <button onclick="aidanSend()">Ask</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* ============================================================
+   STEP 1 (the ONLY thing you must edit):
+   Paste your two Supabase values between the quotes below.
+   Find them in Supabase: Settings (gear icon) -> API Keys / Data API
+   ============================================================ */
+const SUPABASE_URL = "https://pqbpmcshkwdngesnlzgi.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxYnBtY3Noa3dkbmdlc25semdpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM3MDE1MTQsImV4cCI6MjA5OTI3NzUxNH0.xlJpUcADnfpMsKqiNtfP84Fp2xm9YvyB4Lo9J_V3j7I";
+
+/* ============================================================
+   ★★★ LOGIN ON/OFF SWITCH ★★★
+   true  = LIVE MODE — logged-in pages (Discover, Cocktails,
+           My Bar, Trending, Settings) require an account.
+   false = PREVIEW MODE — everything is open, ratings/My Bar
+           are switched off (they need accounts).
+   ============================================================ */
+const AUTH_ENABLED = true;
+
+/* ============================================================
+   ★★★ PRICES ON/OFF SWITCH ★★★
+   Prices vary by store and region. false hides them everywhere,
+   including the price filter on the Discover page.
+   ============================================================ */
+const SHOW_PRICES = false;
+
+/* ============================================================ */
+
+const GUEST_USER = { id: null, email: 'guest', user_metadata: { full_name: 'Guest' } };
+
+/* ---------- built-in cocktail library ----------
+   The Cocktails page reads from this list. "Bottles that pair
+   well" is matched automatically: first by recipes stored on
+   bottles in Supabase, then by spirit type. Add cocktails here. */
+const COCKTAILS = [
+  { slug: 'old-fashioned', name: 'Old Fashioned', emoji: '🥃', spirit: 'Bourbon or Rye', types: ['Bourbon','Rye'], diff: 'Easy', time: '4 min', abv: '~32%',
+    tagline: 'The original cocktail — whiskey, sugar, bitters. Three ingredients, limitless depth.',
+    ingredients: [['Bourbon or rye','2 oz'],['Sugar cube','1'],['Cocktail bitters','2–3 dashes'],['Large ice cube','1'],['Orange peel, garnish','1 strip']],
+    method: ['Muddle the sugar cube with bitters in a rocks glass','Add the large ice cube and pour the whiskey over it','Stir 20–30 seconds until well chilled','Express the orange peel over the glass and drop it in'] },
+  { slug: 'manhattan', name: 'Manhattan', emoji: '🗽', spirit: 'Rye Whiskey', types: ['Rye','Bourbon'], diff: 'Easy', time: '4 min', abv: '~30%',
+    tagline: 'Elegant and timeless — rye, sweet vermouth, bitters, stirred cold and served up.',
+    ingredients: [['Rye whiskey','2 oz'],['Sweet vermouth','1 oz'],['Angostura bitters','2 dashes'],['Cocktail cherry, garnish','1']],
+    method: ['Add all ingredients to a mixing glass with ice','Stir 30 seconds until very cold','Strain into a chilled coupe','Garnish with the cherry'] },
+  { slug: 'whiskey-sour', name: 'Whiskey Sour', emoji: '🍋', spirit: 'Bourbon', types: ['Bourbon'], diff: 'Easy', time: '5 min', abv: '~20%',
+    tagline: 'Bright, balanced, and impossible to dislike — bourbon, lemon, and a touch of sugar.',
+    ingredients: [['Bourbon','2 oz'],['Fresh lemon juice','0.75 oz'],['Simple syrup','0.75 oz'],['Cherry or lemon wheel, garnish','1']],
+    method: ['Shake everything hard with ice for 12–15 seconds','Strain over fresh ice in a rocks glass','Garnish with a cherry or lemon wheel'] },
+  { slug: 'gold-rush', name: 'Gold Rush', emoji: '🌟', spirit: 'Bourbon', types: ['Bourbon'], diff: 'Easy', time: '4 min', abv: '~22%',
+    tagline: 'A modern classic: a whiskey sour that swapped sugar for honey and never looked back.',
+    ingredients: [['Bourbon','2 oz'],['Honey syrup (2:1 honey to water)','0.75 oz'],['Fresh lemon juice','0.75 oz']],
+    method: ['Shake all ingredients with ice','Strain over a big cube in a rocks glass'] },
+  { slug: 'mint-julep', name: 'Mint Julep', emoji: '🌿', spirit: 'Bourbon', types: ['Bourbon'], diff: 'Medium', time: '6 min', abv: '~28%',
+    tagline: 'Derby day in a frosty cup — bourbon, mint, and a mountain of crushed ice.',
+    ingredients: [['Bourbon','2 oz'],['Simple syrup','0.5 oz'],['Fresh mint leaves','8'],['Crushed ice','lots'],['Mint bouquet, garnish','1']],
+    method: ['Gently press the mint with syrup in a julep cup — don\u2019t shred it','Pack the cup with crushed ice','Add bourbon and stir until the cup frosts over','Crown with more ice and the mint bouquet'] },
+  { slug: 'boulevardier', name: 'Boulevardier', emoji: '🍷', spirit: 'Bourbon', types: ['Bourbon','Rye'], diff: 'Easy', time: '4 min', abv: '~28%',
+    tagline: 'A Negroni that traded gin for bourbon — bittersweet, warming, and grown-up.',
+    ingredients: [['Bourbon','1.25 oz'],['Campari','1 oz'],['Sweet vermouth','1 oz'],['Orange peel, garnish','1 strip']],
+    method: ['Stir all ingredients with ice for 25 seconds','Strain over a big cube','Express the orange peel and drop it in'] },
+  { slug: 'sazerac', name: 'Sazerac', emoji: '⚜️', spirit: 'Rye Whiskey', types: ['Rye'], diff: 'Medium', time: '6 min', abv: '~35%',
+    tagline: 'New Orleans\u2019 official cocktail — rye, Peychaud\u2019s, and a whisper of absinthe.',
+    ingredients: [['Rye whiskey','2 oz'],['Sugar cube','1'],['Peychaud\u2019s bitters','3 dashes'],['Absinthe, for the rinse','1 barspoon'],['Lemon peel','1 strip']],
+    method: ['Rinse a chilled rocks glass with absinthe and dump the excess','Stir rye, sugar, and bitters with ice until cold','Strain into the glass neat — no ice','Express the lemon peel over the top and discard it'] },
+  { slug: 'vieux-carre', name: 'Vieux Carré', emoji: '🎺', spirit: 'Rye Whiskey', types: ['Rye'], diff: 'Hard', time: '7 min', abv: '~30%',
+    tagline: 'The French Quarter in a glass — rye, cognac, vermouth, and two kinds of bitters.',
+    ingredients: [['Rye whiskey','0.75 oz'],['Cognac','0.75 oz'],['Sweet vermouth','0.75 oz'],['Bénédictine','1 barspoon'],['Angostura bitters','1 dash'],['Peychaud\u2019s bitters','1 dash'],['Lemon peel, garnish','1 strip']],
+    method: ['Stir everything with ice for 30 seconds','Strain over fresh ice in a rocks glass','Garnish with the lemon peel'] },
+  { slug: 'penicillin', name: 'Penicillin', emoji: '💉', spirit: 'Scotch', types: ['Scotch'], diff: 'Medium', time: '6 min', abv: '~22%',
+    tagline: 'Honey, ginger, lemon, and a float of smoke — the best gateway to peated scotch ever made.',
+    ingredients: [['Blended scotch','2 oz'],['Fresh lemon juice','0.75 oz'],['Honey-ginger syrup','0.75 oz'],['Peaty Islay scotch, to float','0.25 oz'],['Candied ginger, garnish','1']],
+    method: ['Shake the blended scotch, lemon, and syrup with ice','Strain over a big cube','Gently float the smoky scotch on top — don\u2019t stir','Garnish with candied ginger'] },
+  { slug: 'rob-roy', name: 'Rob Roy', emoji: '🏴󠁧󠁢󠁳󠁣󠁴󠁿', spirit: 'Scotch', types: ['Scotch'], diff: 'Easy', time: '4 min', abv: '~30%',
+    tagline: 'A Manhattan with a Scottish accent — malty, rounded, quietly luxurious.',
+    ingredients: [['Scotch whisky','2 oz'],['Sweet vermouth','1 oz'],['Angostura bitters','2 dashes'],['Cocktail cherry, garnish','1']],
+    method: ['Stir all ingredients with ice until cold','Strain into a chilled coupe','Garnish with the cherry'] },
+  { slug: 'highball', name: 'Japanese Highball', emoji: '🗼', spirit: 'Japanese Whisky', types: ['Japanese','Scotch','Bourbon'], diff: 'Easy', time: '2 min', abv: '~10%',
+    tagline: 'Japan\u2019s national serve — whisky, soda, precision. Effortless and endlessly refreshing.',
+    ingredients: [['Whisky','1.5 oz'],['Chilled soda water','4 oz'],['Clear ice','to fill'],['Lemon peel (optional)','1 strip']],
+    method: ['Pack a tall glass with clear ice','Add whisky, then slowly pour in chilled soda','Stir exactly once — precision is the point'] },
+  { slug: 'irish-coffee', name: 'Irish Coffee', emoji: '☕', spirit: 'Irish Whiskey', types: ['Irish'], diff: 'Medium', time: '7 min', abv: '~9%',
+    tagline: 'Hot coffee, Irish whiskey, brown sugar, and a cool cream float. A dessert and a nightcap.',
+    ingredients: [['Irish whiskey','1.5 oz'],['Hot strong coffee','4 oz'],['Brown sugar','2 tsp'],['Lightly whipped cream','float']],
+    method: ['Warm a glass mug with hot water, then dump it','Add coffee and sugar, stir to dissolve','Add the whiskey','Float lightly whipped cream on top by pouring over a spoon'] }
+];
+
+/* ---------- Scotch guide data ---------- */
+const REGIONS = [
+  ['🔥','Islay','Intense peat and sea air. Ardbeg, Laphroaig, Lagavulin.'],
+  ['🌿','Speyside','Fruit-forward, honeyed, no peat. Macallan, Glenfiddich, Glenlivet.'],
+  ['🌄','Highland','The widest range — heather to citrus. Dalmore, Glenmorangie, Oban.'],
+  ['⛵','Islands','Maritime character, gentle smoke. Talisker (Skye), Highland Park (Orkney).'],
+  ['⚓','Campbeltown','Briny, oily, complex. A once-mighty region — Springbank carries the flag.'],
+  ['🌾','Lowland','Lightest and gentlest — a soft landing. Auchentoshan, Glenkinchie.']
+];
+// x/y are positions on the stylised map below. ppm = peat level.
+const DISTILLERIES = [
+  { id:'ardbeg',      name:'Ardbeg',        region:'Islay',       ppm:55, x:65,  y:445, verdict:'Peat turned up to eleven — tar, smoke, and surprising sweetness underneath.' },
+  { id:'laphroaig',   name:'Laphroaig',     region:'Islay',       ppm:43, x:48,  y:462, verdict:'Beach bonfire meets seaweed and vanilla. Love it or hate it — no middle ground.' },
+  { id:'lagavulin',   name:'Lagavulin',     region:'Islay',       ppm:38, x:85,  y:458, verdict:'Rich, deep smoke wrapped in dark sherry sweetness. The definitive Islay dram.' },
+  { id:'springbank',  name:'Springbank',    region:'Campbeltown', ppm:12, x:135, y:470, verdict:'Briny, oily, endlessly complex. The cult favourite of whisky obsessives.' },
+  { id:'auchentoshan',name:'Auchentoshan',  region:'Lowland',     ppm:0,  x:190, y:430, verdict:'Triple-distilled and feather-light. The gentlest possible introduction to scotch.' },
+  { id:'glenkinchie', name:'Glenkinchie',   region:'Lowland',     ppm:0,  x:255, y:425, verdict:'Grassy, floral, and delicate — Edinburgh\u2019s local malt.' },
+  { id:'oban',        name:'Oban',          region:'Highland',    ppm:8,  x:140, y:340, verdict:'A harbour-town malt: citrus and honey with just a wisp of sea smoke.' },
+  { id:'glenmorangie',name:'Glenmorangie',  region:'Highland',    ppm:0,  x:210, y:195, verdict:'Silky and citrusy, famous for creative cask finishes.' },
+  { id:'dalmore',     name:'The Dalmore',   region:'Highland',    ppm:0,  x:225, y:225, verdict:'Rich, chocolatey, sherried luxury with a royal stag on the bottle.' },
+  { id:'macallan',    name:'Macallan',      region:'Speyside',    ppm:0,  x:275, y:235, verdict:'Sherry-cask royalty — dried fruit, spice, and a serious price tag.' },
+  { id:'glenfiddich', name:'Glenfiddich',   region:'Speyside',    ppm:0,  x:295, y:255, verdict:'Orchard fruit and honey. The best-selling single malt on Earth for a reason.' },
+  { id:'glenlivet',   name:'The Glenlivet', region:'Speyside',    ppm:0,  x:262, y:268, verdict:'The classic gateway malt — green apple, pear, and zero smoke.' },
+  { id:'talisker',    name:'Talisker',      region:'Islands',     ppm:20, x:120, y:170, verdict:'Black pepper and sea spray from the Isle of Skye. Smoke with attitude.' },
+  { id:'highlandpark',name:'Highland Park', region:'Islands',     ppm:20, x:275, y:55,  verdict:'Heather honey and gentle Orkney smoke — beautifully balanced.' }
+];
+const PEAT_SCALE = [
+  ['None','0 PPM','#f3e9d2'],['Whisper','5–15','#d9c39a'],['Light','15–25','#b3925e'],
+  ['Moderate','25–35','#8a6437'],['Heavy','35–50','#5c3d1e'],['Intense','50+','#2e1c0c']
+];
+function peatLabel(ppm){ if(ppm===0) return 'None'; if(ppm<15) return 'Whisper'; if(ppm<25) return 'Light'; if(ppm<35) return 'Moderate'; if(ppm<50) return 'Heavy'; return 'Intense'; }
+
+/* ---------- global state ---------- */
+let db = null;
+let bottles = [];
+let ratingsByBottle = {};
+let namesById = {};
+let currentUser = null;
+let myFavorites = new Set();   // wishlist (favorites table)
+let myBar = [];                // bar_items rows: { bottle_id, note }
+let myTastings = [];           // tastings rows
+let barTablesOk = true;        // false if bar_items/tastings SQL not run yet
+let dataLoaded = false;
+let compareMode = false;
+let compareSet = new Set();
+let myStars = 0;
+let openBottleId = null;
+let dramStars = 0;
+let pickerMode = 'bar';        // 'bar' | 'wishlist'
+
+// Discover filters
+let activeType = 'All';
+let activeAvail = 'All';
+let beginnerOnly = false;
+let priceMax = 200;
+let sortBy = 'rating';
+let searchQ = '';
+
+const $ = (id) => document.getElementById(id);
+const RARITY = {
+  1: ['Shelf Staple', 'On most shelves, most of the time'],
+  2: ['Easy to Find', 'Widely stocked, occasionally sells out'],
+  3: ['Premium', 'Takes some hunting — call ahead'],
+  4: ['Allocated', 'Limited release; grab it at list price'],
+  5: ['Trophy Bottle', 'Rare sighting — lotteries and luck']
+};
+const AVAIL_GROUPS = [ ['All', null], ['Shelf Staple', [1,2]], ['Premium', [3]], ['Allocated', [4]], ['Trophy Bottles', [5]] ];
+
+function esc(s){ return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function initials(name){ return String(name).split(' ').filter(w => /[A-Za-z0-9]/.test(w[0])).slice(0,2).map(w => w[0]).join(''); }
+function avgFor(id){ const l = ratingsByBottle[id] || []; return l.length ? l.reduce((s,r)=>s+r.stars,0)/l.length : null; }
+function starString(avg){ const f = Math.round(avg); return '★'.repeat(f) + '☆'.repeat(5-f); }
+function isBeginner(b){ const n = (b.tasting_notes||'').toLowerCase(); return (b.rarity||1) <= 2 && !/peat|smoke|iodine|campfire/.test(n); }
+function bottleSlugMatch(b, cocktailName){
+  const list = Array.isArray(b.cocktails) ? b.cocktails : [];
+  return list.some(c => c.name && c.name.toLowerCase().includes(cocktailName.toLowerCase().split(' ')[0]) && c.name.toLowerCase().replace(/[^a-z]/g,'').includes(cocktailName.toLowerCase().replace(/[^a-z]/g,'')));
+}
+function pairedBottles(cocktail){
+  // 1) bottles whose stored recipes mention this cocktail by name
+  const named = bottles.filter(b => (Array.isArray(b.cocktails)?b.cocktails:[]).some(c => (c.name||'').toLowerCase().includes(cocktail.name.toLowerCase())));
+  if (named.length >= 2) return named.slice(0,4);
+  // 2) fall back to matching spirit type, gentlest first
+  const typed = bottles.filter(b => cocktail.types.includes(b.type) && !named.includes(b)).sort((a,b)=>(a.rarity||1)-(b.rarity||1));
+  return [...named, ...typed].slice(0,4);
+}
+
+/* ============================================================
+   ROUTER — every "page" is a hash route in this one file
+   ============================================================ */
+const PROTECTED = ['discover','bottle','cocktails','cocktail','mybar','trending','settings'];
+
+function go(path){ location.hash = '#' + path; }
+
+function parseRoute(){
+  const h = location.hash.replace(/^#/, '') || '/';
+  const parts = h.split('/').filter(Boolean);   // '/bottle/3' -> ['bottle','3']
+  return { name: parts[0] || 'landing', arg: parts[1] || null };
+}
+
+async function route(){
+  document.querySelector('#site-nav .links')?.classList.remove('open');
+  const r = parseRoute();
+  const needsAuth = AUTH_ENABLED && PROTECTED.includes(r.name);
+  if (needsAuth && !currentUser) { renderNav(); return renderAuthPage('login', 'Sign in to open that page.'); }
+
+  // logged-in users skip the marketing landing page
+  if ((r.name === 'landing') && currentUser) return go('/discover');
+
+  if (currentUser && !dataLoaded && PROTECTED.includes(r.name)) await loadEverything();
+
+  renderNav();
+  window.scrollTo({ top: 0 });
+  const pages = {
+    landing: renderLanding, about: renderAbout, 'scotch-guide': renderScotchGuide,
+    login: () => renderAuthPage('login'), signup: () => renderAuthPage('signup'),
+    discover: renderDiscover, bottle: () => renderBottleDetail(Number(r.arg)),
+    cocktails: renderCocktails, cocktail: () => renderCocktailDetail(r.arg),
+    mybar: renderMyBar, trending: renderTrending, settings: renderSettings
+  };
+  (pages[r.name] || renderLanding)();
+  $('site-footer').classList.toggle('hidden', !!currentUser && !['landing','about','scotch-guide'].includes(r.name));
+}
+window.addEventListener('hashchange', route);
+
+/* ============================================================
+   NAV
+   ============================================================ */
+function renderNav(){
+  const r = parseRoute();
+  const link = (path, label) => `<a href="#${path}" class="${('/'+r.name).startsWith(path) && path!=='/' ? 'active' : (path==='/'&&r.name==='landing'?'active':'')}">${label}</a>`;
+  if (currentUser) {
+    $('nav-links').innerHTML =
+      link('/discover','Discover') + link('/cocktails','Cocktails') + link('/mybar','My Bar') +
+      link('/trending','Trending') + link('/scotch-guide','Scotch Guide');
+    const name = (currentUser.user_metadata && currentUser.user_metadata.full_name) || currentUser.email;
+    $('nav-right').innerHTML = `
+      <span class="who">${AUTH_ENABLED ? 'Cheers, ' + esc(String(name).split(' ')[0]) : 'Preview mode'}</span>
+      <button class="aidan-nav-btn" onclick="toggleAidan()">✦ Aidan</button>
+      ${AUTH_ENABLED ? `<button class="btn ghost sm" onclick="go('/settings')">Settings</button>
+      <button class="btn ghost sm" onclick="signOut()">Sign out</button>` : ''}`;
+  } else {
+    $('nav-links').innerHTML = link('/about','About') + link('/scotch-guide','Scotch Guide');
+    $('nav-right').innerHTML = `
+      <a class="btn ghost sm" href="#/login">Log In</a>
+      <a class="btn sm" href="#/signup">Sign Up →</a>`;
+  }
+  $('site-nav').classList.remove('hidden');
+}
+
+/* ============================================================
+   BOOT + AUTH
+   ============================================================ */
+window.addEventListener('DOMContentLoaded', async () => {
+  if (SUPABASE_URL.includes('PASTE_') || SUPABASE_ANON_KEY.includes('PASTE_')) {
+    $('setup-notice').classList.remove('hidden');
+    return;
+  }
+  db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  if (!AUTH_ENABLED) { currentUser = GUEST_USER; await loadEverything(); route(); return; }
+
+  const isRecovery = window.location.hash.includes('type=recovery');
+  const { data: { session } } = await db.auth.getSession();
+  if (isRecovery) { currentUser = null; renderNav(); renderAuthPage('reset'); }
+  else { currentUser = session ? session.user : null; if(currentUser){ $('aidan-fab').classList.remove('hidden'); } await route(); if (currentUser) initTasteQuiz(); }
+
+  db.auth.onAuthStateChange(async (evt, sess) => {
+    if (evt === 'PASSWORD_RECOVERY') { renderAuthPage('reset'); return; }
+    const wasIn = !!currentUser;
+    currentUser = sess ? sess.user : null;
+    if (currentUser && !wasIn) {
+      dataLoaded = false;
+      $('aidan-fab').classList.remove('hidden');
+      aidanGreetOnce();
+      go('/discover'); await route();
+      initTasteQuiz();
+    } else if (!currentUser && wasIn) {
+      dataLoaded = false; $('aidan-fab').classList.add('hidden'); $('aidan-panel').classList.add('hidden');
+      go('/'); route();
+    }
+  });
+});
+
+function msg(el, text, kind){ el.className = 'form-msg ' + kind; el.textContent = text; }
+function ageFromDOB(y, m, d){
+  const dob = new Date(y, m - 1, d);
+  if (dob.getFullYear() !== +y || dob.getMonth() !== m - 1 || dob.getDate() !== +d) return NaN;
+  const now = new Date();
+  let age = now.getFullYear() - dob.getFullYear();
+  const mm = now.getMonth() - dob.getMonth();
+  if (mm < 0 || (mm === 0 && now.getDate() < dob.getDate())) age--;
+  return age;
+}
+
+async function signUp(){
+  const name = $('su-name').value.trim(), email = $('su-email').value.trim(),
+        phone = $('su-phone').value.trim(), pass = $('su-pass').value, box = $('su-msg');
+  const m = +$('su-dob-m').value, d = +$('su-dob-d').value, y = +$('su-dob-y').value;
+  if (!name || !email || !pass || !m || !d || !y)
+    return msg(box, 'Please fill in your name, email, password, and full date of birth.', 'err');
+  if (pass.length < 8) return msg(box, 'Password needs to be at least 8 characters.', 'err');
+  const age = ageFromDOB(y, m, d);
+  if (isNaN(age) || age < 0 || age > 120) return msg(box, 'That birthdate doesn\u2019t look right — please double-check it.', 'err');
+  if (age < 21) return msg(box, 'Sorry — you must be 21 or older to use Whiskey Horizon. See you in a few years.', 'err');
+  const dob = `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+  msg(box, 'Creating your account\u2026', 'ok');
+  const { data, error } = await db.auth.signUp({
+    email, password: pass,
+    options: { data: { full_name: name, phone: phone, date_of_birth: dob } }
+  });
+  if (error) return msg(box, error.message, 'err');
+  if (data.session) return; // signed straight in — onAuthStateChange takes over
+  msg(box, 'Account created! Check your email for a confirmation link, then come back and log in.', 'ok');
+}
+
+async function signIn(){
+  const box = $('si-msg');
+  msg(box, 'Signing in\u2026', 'ok');
+  const { error } = await db.auth.signInWithPassword({ email: $('si-email').value.trim(), password: $('si-pass').value });
+  if (error) msg(box, error.message, 'err');
+}
+async function signOut(){ await db.auth.signOut(); }
+
+async function forgotPassword(){
+  const box = $('si-msg');
+  const email = $('si-email').value.trim();
+  if (!email) return msg(box, 'Type your email in the box above first, then tap \u201CForgot password?\u201D again.', 'err');
+  msg(box, 'Sending reset link\u2026', 'ok');
+  const { error } = await db.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + window.location.pathname });
+  if (error) return msg(box, error.message, 'err');
+  msg(box, 'Reset link sent — check your email (and spam). The link brings you back here to set a new password.', 'ok');
+}
+async function submitNewPassword(){
+  const box = $('rp-msg');
+  const p1 = $('rp-pass').value, p2 = $('rp-pass2').value;
+  if (p1.length < 8) return msg(box, 'Password needs to be at least 8 characters.', 'err');
+  if (p1 !== p2) return msg(box, 'Those two passwords don\u2019t match — try again.', 'err');
+  msg(box, 'Saving\u2026', 'ok');
+  const { error } = await db.auth.updateUser({ password: p1 });
+  if (error) return msg(box, error.message, 'err');
+  msg(box, 'Password updated — signing you in\u2026', 'ok');
+}
+
+/* ============================================================
+   DATA
+   ============================================================ */
+async function loadEverything(){
+  const [{ data: b, error: be }, { data: r }, { data: p }] = await Promise.all([
+    db.from('bottles').select('*').order('name'),
+    db.from('ratings').select('*'),
+    db.from('profiles').select('id, full_name')
+  ]);
+  if (be) { console.warn(be.message); }
+  bottles = b || [];
+  ratingsByBottle = {};
+  (r || []).forEach(rt => (ratingsByBottle[rt.bottle_id] = ratingsByBottle[rt.bottle_id] || []).push(rt));
+  namesById = {};
+  (p || []).forEach(pr => namesById[pr.id] = (pr.full_name || 'Member').split(' ')[0]);
+
+  myFavorites = new Set(); myBar = []; myTastings = []; barTablesOk = true;
+  if (AUTH_ENABLED && currentUser && currentUser.id) {
+    const [{ data: f }, barRes, tastRes] = await Promise.all([
+      db.from('favorites').select('bottle_id').eq('user_id', currentUser.id),
+      db.from('bar_items').select('*').eq('user_id', currentUser.id),
+      db.from('tastings').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false })
+    ]);
+    (f || []).forEach(x => myFavorites.add(x.bottle_id));
+    if (barRes.error || tastRes.error) barTablesOk = false;
+    myBar = barRes.data || [];
+    myTastings = tastRes.data || [];
+  }
+  dataLoaded = true;
+}
+async function refreshRatings(){
+  const { data: r } = await db.from('ratings').select('*');
+  ratingsByBottle = {};
+  (r || []).forEach(rt => (ratingsByBottle[rt.bottle_id] = ratingsByBottle[rt.bottle_id] || []).push(rt));
+}
+
+/* ============================================================
+   PAGE: LANDING (public)
+   ============================================================ */
+const FEATURED_STATIC = [
+  ['🥃','Buffalo Trace','Bourbon'],['🍮','Maker\u2019s Mark','Bourbon'],['🦌','Glenfiddich 12','Scotch'],
+  ['🔥','Laphroaig 10','Scotch'],['☘️','Jameson','Irish']
+];
+function renderLanding(){
+  $('page').innerHTML = `
+  <div class="wrap">
+    <section class="hero">
+      <div>
+        <h1>Whiskey discovery<br>for <em>every</em> level</h1>
+        <p class="tagline">\u201CI\u2019m looking at a bottle — what can I make?\u201D</p>
+        <p class="sub">Standing in the whiskey aisle holding something unfamiliar? Whiskey Horizon tells you what it tastes like, how hard it is to find, and exactly what to make with it — with Aidan, your no-judgment whiskey guide, along for the ride.</p>
+        <div class="ctas">
+          <a class="btn" href="#/signup">Get Started Free</a>
+          <a class="btn ghost" href="#/login">Log In</a>
+        </div>
+      </div>
+      <div class="hero-shelf">
+        <div class="row">
+          ${FEATURED_STATIC.slice(0,3).map(f => `<div class="mini"><div class="glass">${f[0]}</div><b>${f[1]}</b><small>${f[2]}</small></div>`).join('')}
+        </div>
+        <div class="row" style="margin-top:12px; grid-template-columns:repeat(2,1fr); padding:0 40px;">
+          ${FEATURED_STATIC.slice(3).map(f => `<div class="mini"><div class="glass">${f[0]}</div><b>${f[1]}</b><small>${f[2]}</small></div>`).join('')}
+        </div>
+        <p class="caption">A peek at the shelf — 120+ bottles and growing</p>
+      </div>
+    </section>
+
+    <section class="value-grid">
+      <div class="value-card"><div class="ico">🥃</div><h3>For Beginners</h3><p>Start with your first bottle. Plain English, no jargon, no gatekeeping.</p></div>
+      <div class="value-card"><div class="ico">📖</div><h3>Learn As You Go</h3><p>Discover tasting notes, regions, and rarity naturally — one bottle at a time.</p></div>
+      <div class="value-card"><div class="ico">🍸</div><h3>Bottle → Cocktail</h3><p>See exactly what you can make with the bottle in your hand, with real recipes.</p></div>
+      <div class="value-card"><div class="ico">✦</div><h3>Ask Aidan</h3><p>Your AI whiskey guide is on every page. There are no dumb questions here.</p></div>
+    </section>
+
+    <section class="featured">
+      <h2>Featured bottles</h2>
+      <p class="lede">A taste of what\u2019s waiting on the shelf once you\u2019re in.</p>
+      <div class="strip">
+        ${FEATURED_STATIC.map(f => `<div class="f-card"><div class="img">${f[0]}</div><div class="body"><b>${f[1]}</b><small>${f[2]}</small></div></div>`).join('')}
+      </div>
+    </section>
+  </div>`;
+}
+
+/* ============================================================
+   PAGE: ABOUT (public)
+   ============================================================ */
+function renderAbout(){
+  $('page').innerHTML = `
+  <div class="wrap">
+    <div class="page-head">
+      <h1>How Whiskey Horizon works</h1>
+      <p>From \u201Cwhat even is bourbon?\u201D to hunting allocated bottles — the site grows with you.</p>
+    </div>
+    <div class="about-grid">
+      <div class="step-card"><div class="num">01</div><h3>Tell us your taste</h3><p>Three quick questions when you join — sweet or smoky, sipping or mixing — and the shelf sorts itself around you.</p></div>
+      <div class="step-card"><div class="num">02</div><h3>Discover bottles</h3><p>Search and filter 120+ bottles by flavor, availability, and beginner-friendliness. Every bottle carries plain-English tasting notes and a rarity gauge.</p></div>
+      <div class="step-card"><div class="num">03</div><h3>Make something</h3><p>Every bottle links to cocktails it was born for, and every cocktail links back to bottles that pair well. Ratings come from real members.</p></div>
+    </div>
+    <div class="about-grid">
+      <div class="step-card"><div class="num">04</div><h3>Build your bar</h3><p>Track what you own, keep a wishlist, and log tastings in My Bar — your collection, remembered between visits.</p></div>
+      <div class="step-card"><div class="num">05</div><h3>Learn the deep stuff</h3><p>The Scotch Guide\u2019s interactive peat map explains regions and smoke levels without requiring a single day of prior knowledge.</p></div>
+      <div class="step-card"><div class="num">06</div><h3>Ask Aidan anything</h3><p>Aidan is the friend who knows whiskey and never makes you feel dumb for asking. He\u2019s one tap away on every page.</p></div>
+    </div>
+    <div class="about-band">
+      <div>
+        <h2>Built for the store aisle moment</h2>
+        <p>The whole site exists for one moment: you, holding an unfamiliar bottle, wondering if it\u2019s any good and what you\u2019d do with it. Open Whiskey Horizon, look it up, and know in thirty seconds.</p>
+      </div>
+      <div style="text-align:center;">
+        <a class="btn" href="#/signup">Get Started Free</a>
+        <p class="muted" style="font-size:12.5px; margin-top:10px;">21+ only. Please enjoy responsibly.</p>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ============================================================
+   PAGE: AUTH (login / signup / reset) — wireframe two-column
+   ============================================================ */
+function renderAuthPage(which, notice){
+  renderNav();
+  const hero = `
+    <div class="auth-hero">
+      <div></div>
+      <div>
+        <h1>The whiskey guide that <em>grows</em> with you</h1>
+        <p class="sub">Know the bottle before you buy it — flavor, rarity, and the cocktails it was born for.</p>
+        <div class="hero-points">
+          <div><span class="tick">01</span><span>Find bottles for every budget</span></div>
+          <div><span class="tick">02</span><span>Get plain-English tasting guides</span></div>
+          <div><span class="tick">03</span><span>Discover cocktails for what you own</span></div>
+          <div><span class="tick">04</span><span>Ask Aidan — no dumb questions</span></div>
+        </div>
+      </div>
+      <p class="age-note">You must be 21 or older to enter. Please enjoy responsibly.</p>
+    </div>`;
+
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const yearNow = new Date().getFullYear();
+  const signup = `
+    <div class="auth-card">
+      <h2>Create your account</h2>
+      <p class="lede">Join Whiskey Horizon — takes a minute. You must be 21+ to enter.</p>
+      <div class="field"><label for="su-name">Full Name *</label><input id="su-name" type="text" autocomplete="name" placeholder="First and last name"></div>
+      <div class="field"><label for="su-email">Email Address *</label><input id="su-email" type="email" autocomplete="email" placeholder="you@email.com"></div>
+      <div class="field"><label for="su-phone">Phone Number (optional)</label><input id="su-phone" type="tel" autocomplete="tel" placeholder="e.g. +1 555 000 0000"></div>
+      <div class="field"><label for="su-pass">Password *</label><input id="su-pass" type="password" autocomplete="new-password" placeholder="At least 8 characters"></div>
+      <div class="field"><label>Date of Birth * — must be 21+</label>
+        <div class="dob-row">
+          <select id="su-dob-m"><option value="">Month</option>${months.map((m,i)=>`<option value="${i+1}">${m}</option>`).join('')}</select>
+          <select id="su-dob-d"><option value="">Day</option>${Array.from({length:31},(_,i)=>`<option value="${i+1}">${i+1}</option>`).join('')}</select>
+          <select id="su-dob-y"><option value="">Year</option>${Array.from({length:100},(_,i)=>{const y=yearNow-i;return `<option value="${y}">${y}</option>`;}).join('')}</select>
+        </div>
+      </div>
+      <div class="age-badge">✓&nbsp; Age is verified at signup — under-21 accounts are not created</div>
+      <button class="btn full" onclick="signUp()">Create Account &amp; Verify Age →</button>
+      <div id="su-msg" class="form-msg"></div>
+      <p class="legal-line">Already have an account? <a href="#/login">Log in here</a></p>
+      <p class="legal-line">By creating an account you confirm you are of legal drinking age in your region.</p>
+    </div>`;
+
+  const login = `
+    <div class="auth-card">
+      <h2>Welcome back</h2>
+      <p class="lede">Pull up a stool.</p>
+      ${notice ? `<div class="form-msg err" style="display:block; margin:0 0 16px;">${esc(notice)}</div>` : ''}
+      <div class="field"><label for="si-email">Email</label><input id="si-email" type="email" autocomplete="email"></div>
+      <div class="field"><label for="si-pass">Password</label><input id="si-pass" type="password" autocomplete="current-password" onkeydown="if(event.key==='Enter') signIn()"></div>
+      <div style="text-align:right; margin:-6px 0 14px;"><button class="link-btn" onclick="forgotPassword()">Forgot password?</button></div>
+      <button class="btn full" onclick="signIn()">Log In</button>
+      <div id="si-msg" class="form-msg"></div>
+      <p class="legal-line">New here? <a href="#/signup">Create a free account</a></p>
+    </div>`;
+
+  const reset = `
+    <div class="auth-card">
+      <h2>Set a new password</h2>
+      <p class="lede">You\u2019re verified — pick a new password below and you\u2019ll be signed straight in.</p>
+      <div class="field"><label for="rp-pass">New password</label><input id="rp-pass" type="password" autocomplete="new-password" placeholder="8+ characters"></div>
+      <div class="field"><label for="rp-pass2">Repeat new password</label><input id="rp-pass2" type="password" autocomplete="new-password"></div>
+      <button class="btn full" onclick="submitNewPassword()">Save password &amp; sign in</button>
+      <div id="rp-msg" class="form-msg"></div>
+    </div>`;
+
+  $('page').innerHTML = `<div class="auth-layout">${hero}<div class="auth-panel">${which==='signup' ? signup : which==='reset' ? reset : login}</div></div>`;
+  $('site-footer').classList.add('hidden');
+}
+
+/* ============================================================
+   PAGE: DISCOVER — sidebar filters + bottle grid
+   ============================================================ */
+function renderDiscover(){
+  const types = ['All', ...new Set(bottles.map(b => b.type))];
+  $('page').innerHTML = `
+  <div class="wrap">
+    <div class="page-head" style="display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap;">
+      <div><h1>Discover</h1><p>Every bottle carries its own intelligence — flavor, availability, and the cocktails it was born for.</p></div>
+      <div style="display:flex; gap:10px;">
+        <button class="btn ghost sm" onclick="startQuiz()">Help me choose</button>
+        <button class="btn ghost sm" id="compare-toggle" onclick="toggleCompareMode()">${compareMode ? '✕ Exit compare' : '⇄ Compare bottles'}</button>
+      </div>
+    </div>
+    <div class="discover-layout">
+      <aside class="sidebar">
+        <details open>
+          <summary style="font-weight:700; cursor:pointer; color:var(--amber);">Filters</summary>
+          <div class="side-group" style="margin-top:14px;">
+            <h4>Category</h4>
+            <div class="side-list">
+              ${types.map(t => `<button class="${t===activeType?'active':''}" onclick="setType('${esc(t)}')">${t==='All' ? 'All Spirits' : esc(t)}</button>`).join('')}
+            </div>
+          </div>
+          ${SHOW_PRICES ? `
+          <div class="side-group">
+            <h4>Price Range</h4>
+            <input type="range" min="20" max="200" step="5" value="${priceMax}" style="width:100%; accent-color:var(--amber);" oninput="priceMax=+this.value; $('price-cap').textContent = priceMax>=200 ? '$200+' : '$'+priceMax; renderGrid();">
+            <div style="display:flex; justify-content:space-between; color:var(--muted); font-size:12.5px;"><span>$20</span><span id="price-cap">${priceMax>=200?'$200+':'$'+priceMax}</span></div>
+          </div>` : ''}
+          <div class="side-group">
+            <h4>Availability</h4>
+            <div class="side-list" id="avail-list">
+              ${AVAIL_GROUPS.map(g => `<button class="${g[0]===activeAvail?'active':''}" onclick="setAvail('${g[0]}')">${g[0]}</button>`).join('')}
+            </div>
+          </div>
+          <div class="side-group">
+            <h4>Good for beginners</h4>
+            <label class="side-check"><input type="checkbox" ${beginnerOnly?'checked':''} onchange="beginnerOnly=this.checked; renderGrid();"> ⭐ Beginner friendly only</label>
+          </div>
+        </details>
+      </aside>
+      <section>
+        <div class="controls-row">
+          <input id="search" type="search" placeholder="🔍  Search bottles, flavours, distilleries…" value="${esc(searchQ)}" oninput="searchQ=this.value; renderGrid()">
+        </div>
+        <div id="match-banner" class="hidden">
+          <div class="inner">
+            <b>Your matches</b>
+            <span id="match-text"></span>
+            <button onclick="startQuiz()">Retake quiz</button>
+            <button onclick="clearMatches()">Show all bottles</button>
+          </div>
+        </div>
+        <div class="result-row">
+          <span class="count" id="result-count"></span>
+          <label style="color:var(--muted); font-size:14px;">Sort by:
+            <select onchange="sortBy=this.value; renderGrid();">
+              <option value="rating" ${sortBy==='rating'?'selected':''}>Rating: High to Low</option>
+              <option value="name" ${sortBy==='name'?'selected':''}>Name: A to Z</option>
+              <option value="rarity" ${sortBy==='rarity'?'selected':''}>Easiest to find first</option>
+              ${SHOW_PRICES ? `<option value="price" ${sortBy==='price'?'selected':''}>Price: Low to High</option>` : ''}
+            </select>
+          </label>
+        </div>
+        <div class="grid" id="grid"></div>
+      </section>
+    </div>
+  </div>`;
+  if (quizAnswers && quizAnswers.flavor && matchIds.size === 0 && bottles.length) computeMatches();
+  if (matchesActive && matchIds.size) showMatchBanner();
+  renderGrid();
+  $('compare-tray').classList.toggle('hidden', !compareMode);
+}
+
+function setType(t){ activeType = t; renderDiscover(); }
+function setAvail(a){ activeAvail = a; renderDiscover(); }
+
+function filteredBottles(){
+  const q = searchQ.trim().toLowerCase();
+  const availGroup = AVAIL_GROUPS.find(g => g[0] === activeAvail);
+  let list = bottles.filter(b =>
+    (!matchesActive || matchIds.size === 0 || matchIds.has(b.id)) &&
+    (activeType === 'All' || b.type === activeType) &&
+    (!availGroup || !availGroup[1] || availGroup[1].includes(b.rarity || 1)) &&
+    (!beginnerOnly || isBeginner(b)) &&
+    (!SHOW_PRICES || priceMax >= 200 || (b.price != null && Number(b.price) <= priceMax)) &&
+    (!q || b.name.toLowerCase().includes(q) || b.company.toLowerCase().includes(q) ||
+      (b.type||'').toLowerCase().includes(q) || (b.tasting_notes||'').toLowerCase().includes(q))
+  );
+  const sorters = {
+    rating: (a,b) => (avgFor(b.id)||0) - (avgFor(a.id)||0),
+    name: (a,b) => a.name.localeCompare(b.name),
+    rarity: (a,b) => (a.rarity||1) - (b.rarity||1),
+    price: (a,b) => (a.price||999) - (b.price||999)
+  };
+  return list.sort(sorters[sortBy] || sorters.rating);
+}
+
+function renderGrid(){
+  const grid = $('grid');
+  if (!grid) return;
+  const list = filteredBottles();
+  const rc = $('result-count');
+  if (rc) rc.textContent = `Showing ${list.length} bottle${list.length===1?'':'s'}`;
+  if (!list.length) {
+    grid.innerHTML = '<div class="empty-state">No bottles match. Try clearing filters or the search — or add more bottles in your Supabase Table Editor.</div>';
+    return;
+  }
+  grid.innerHTML = list.map(b => {
+    const avg = avgFor(b.id);
+    const img = b.image_url
+      ? `<img src="${esc(b.image_url)}" alt="${esc(b.name)}" loading="lazy">`
+      : `<span class="placeholder">${esc(initials(b.name))}</span>`;
+    const selIdx = compareMode ? [...compareSet].indexOf(b.id) : -1;
+    return `
+    <button class="card ${selIdx > -1 ? 'selected' : ''}" onclick="cardClick(${b.id})">
+      <div class="img">${img}
+        ${isBeginner(b) ? '<span class="badge-beginner">BEGINNER</span>' : ''}
+        ${compareMode ? `<span class="sel-badge">${selIdx > -1 ? selIdx + 1 : '+'}</span>` : ''}
+        ${myFavorites.has(b.id) ? '<span class="card-fav">♥</span>' : ''}
+      </div>
+      <div class="body">
+        <span class="type-tag">${esc(b.type)}</span>
+        <h3>${esc(b.name)}</h3>
+        <div class="company">${esc(b.company)}</div>
+        <div class="meta">
+          ${SHOW_PRICES ? `<span class="price">${b.price != null ? '$' + Number(b.price).toFixed(0) : '—'}</span>` : `<span class="muted" style="font-size:12.5px;">${esc((RARITY[b.rarity]||RARITY[1])[0])}</span>`}
+          <span class="stars">${avg ? starString(avg) + ` <span class="count">(${(ratingsByBottle[b.id]||[]).length})</span>` : '<span class="count">No ratings yet</span>'}</span>
+        </div>
+      </div>
+    </button>`;
+  }).join('');
+}
+
+function cardClick(id){
+  if (!compareMode) return go('/bottle/' + id);
+  if (compareSet.has(id)) compareSet.delete(id);
+  else if (compareSet.size >= 5) return flashTray('Max 5 — tap a selected bottle to swap');
+  else compareSet.add(id);
+  updateTray(); renderGrid();
+}
+
+/* ---------- compare ---------- */
+function toggleCompareMode(){
+  compareMode = !compareMode;
+  compareSet.clear();
+  const btn = $('compare-toggle');
+  if (btn) btn.textContent = compareMode ? '✕ Exit compare' : '⇄ Compare bottles';
+  $('compare-tray').classList.toggle('hidden', !compareMode);
+  updateTray(); renderGrid();
+}
+function updateTray(){
+  $('tray-count').textContent = compareSet.size ? `${compareSet.size} of 5 selected` : 'Tap bottles to select';
+  $('tray-go').disabled = compareSet.size < 2;
+}
+let trayTimer = null;
+function flashTray(text){ $('tray-count').textContent = text; clearTimeout(trayTimer); trayTimer = setTimeout(updateTray, 2200); }
+
+function openCompare(){
+  const picks = [...compareSet].map(id => bottles.find(b => b.id === id)).filter(Boolean);
+  if (picks.length < 2) return;
+  const prices = picks.map(b => b.price != null ? Number(b.price) : null);
+  const validPrices = prices.filter(p => p != null);
+  const minPrice = validPrices.length ? Math.min(...validPrices) : null;
+  const avgs = picks.map(b => avgFor(b.id));
+  const validAvgs = avgs.filter(a => a != null);
+  const maxAvg = validAvgs.length ? Math.max(...validAvgs) : null;
+  const row = (label, cells) => `<tr><td class="rowlabel">${label}</td>${cells.join('')}</tr>`;
+  const td = (html, best) => `<td class="${best ? 'best' : ''}">${html}</td>`;
+  $('compare-body').innerHTML = `<div class="compare-scroll"><table class="compare-table">
+    <tr><th class="rowlabel"></th>${picks.map(b => `
+      <th>
+        <div class="cb-img">${b.image_url ? `<img src="${esc(b.image_url)}" alt="${esc(b.name)}">` : `<span class="placeholder">${esc(initials(b.name))}</span>`}</div>
+        <div class="cb-name">${esc(b.name)}</div>
+        <div class="cb-co">${esc(b.company)}</div>
+        <button class="cb-open" onclick="closeCompare(); go('/bottle/${b.id}')">Full details →</button>
+      </th>`).join('')}
+    </tr>
+    ${SHOW_PRICES ? row('Price', picks.map((b, i) => {
+      const best = minPrice != null && prices[i] === minPrice;
+      return td(prices[i] != null ? '$' + prices[i].toFixed(2) + (best ? '<span class="best-tag">Lowest</span>' : '') : '<span class="muted">—</span>', best);
+    })) : ''}
+    ${row('Member rating', picks.map((b, i) => {
+      const a = avgs[i];
+      const best = maxAvg != null && a === maxAvg;
+      const count = (ratingsByBottle[b.id] || []).length;
+      return td(a ? `<span class="stars">${starString(a)}</span> ${a.toFixed(1)} (${count})${best ? '<span class="best-tag">Top rated</span>' : ''}` : '<span class="muted">No ratings yet</span>', best);
+    }))}
+    ${row('Type', picks.map(b => td(esc(b.type))))}
+    ${row('Availability', picks.map(b => { const r = RARITY[b.rarity] || RARITY[1]; return td(`${esc(r[0])}<br><span class="muted" style="font-size:12.5px">${esc(r[1])}</span>`); }))}
+    ${row('Tasting notes', picks.map(b => td(esc(b.tasting_notes || '—'))))}
+    ${row('Cocktail matches', picks.map(b => { const c = Array.isArray(b.cocktails) ? b.cocktails.map(x => esc(x.name)).join(', ') : ''; return td(c || '<span class="muted">—</span>'); }))}
+    ${row('The story', picks.map(b => td(`<span class="muted">${esc(b.description || '—')}</span>`)))}
+  </table></div>`;
+  $('compare-sub').textContent = SHOW_PRICES ? 'Lowest price and top member rating are highlighted.' : 'Top member rating is highlighted.';
+  $('compare-back').classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+function closeCompare(){ $('compare-back').classList.add('hidden'); document.body.style.overflow = ''; }
+
+/* ---------- taste quiz (kept from v1) ---------- */
+const QUIZ = [
+  { key: 'exp', q: 'How deep are you into whiskey?', lede: 'No wrong answers — this just shapes what we show first.', opts: [
+    ['new',  'Brand new', 'First-bottle territory — keep it friendly'],
+    ['some', 'I\u2019ve dabbled', 'I know what an Old Fashioned is; ready for more'],
+    ['pro',  'Enthusiast', 'Comfortable — show me everything']
+  ]},
+  { key: 'flavor', q: 'Which flavors are calling you?', lede: 'Go with your gut — you can retake this anytime.', opts: [
+    ['sweet', 'Sweet & smooth', 'Caramel, vanilla, honey'],
+    ['spice', 'Bold & spicy', 'Pepper, cinnamon, baking spice'],
+    ['fruit', 'Fruity & elegant', 'Orchard fruit, citrus, floral'],
+    ['smoke', 'Smoky', 'Campfire, peat, sea air']
+  ]},
+  { key: 'serve', q: 'How will you mostly drink it?', lede: 'Last one.', opts: [
+    ['neat', 'Sipping it straight', 'Neat, or over one big cube'],
+    ['cocktails', 'Mixing cocktails', 'Shaker at the ready'],
+    ['both', 'A bit of both', 'Depends on the night']
+  ]}
+];
+const QUIZ_LABELS = {
+  exp: { new: 'New to whiskey', some: 'Dabbler', pro: 'Enthusiast' },
+  flavor: { sweet: 'sweet & smooth', spice: 'bold & spicy', fruit: 'fruity & elegant', smoke: 'smoky' },
+  serve: { neat: 'sipping neat', cocktails: 'cocktails', both: 'neat & cocktails' }
+};
+let quizAnswers = null, quizStep = 0, quizDraft = {}, matchesActive = false, matchIds = new Set();
+
+function startQuiz(){ quizStep = 0; quizDraft = {}; renderQuizStep(); $('quiz-back').classList.remove('hidden'); document.body.style.overflow = 'hidden'; }
+function renderQuizStep(){
+  const step = QUIZ[quizStep];
+  $('quiz-body').innerHTML = `
+    <div class="quiz-wrap">
+      <div class="quiz-dots">${QUIZ.map((_, i) => `<span class="${i <= quizStep ? 'done' : ''}"></span>`).join('')}</div>
+      <span class="type-tag">Question ${quizStep + 1} of ${QUIZ.length}</span>
+      <h2>${step.q}</h2>
+      <p class="lede" style="color:var(--muted); font-size:14px;">${step.lede}</p>
+      ${step.opts.map(o => `<button class="quiz-option" onclick="pickQuizOption('${o[0]}')">${o[1]}<small>${o[2]}</small></button>`).join('')}
+    </div>`;
+}
+function pickQuizOption(val){
+  quizDraft[QUIZ[quizStep].key] = val;
+  quizStep++;
+  if (quizStep < QUIZ.length) return renderQuizStep();
+  finishQuiz();
+}
+async function finishQuiz(){
+  quizAnswers = { ...quizDraft };
+  closeQuiz(true);
+  await saveTastePrefs(quizAnswers);
+  computeMatches();
+  if (parseRoute().name !== 'discover') go('/discover');
+  else { showMatchBanner(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+}
+async function closeQuiz(finished){
+  $('quiz-back').classList.add('hidden');
+  document.body.style.overflow = '';
+  if (finished !== true && !quizAnswers) await saveTastePrefs({ skipped: true });
+}
+async function saveTastePrefs(prefs){
+  if (!AUTH_ENABLED || !currentUser || !currentUser.id) return;
+  const { error } = await db.from('profiles').update({ taste_prefs: prefs }).eq('id', currentUser.id);
+  if (error) console.warn('Could not save taste prefs (run add-taste-quiz.sql):', error.message);
+}
+function computeMatches(){
+  const a = quizAnswers || {};
+  const scored = bottles.map(b => {
+    let s = 0;
+    const notes = (b.tasting_notes || '').toLowerCase();
+    const smoky = /smoke|peat|iodine|campfire/.test(notes);
+    if (a.flavor === 'sweet') { if (b.type === 'Bourbon') s += 2; if (/vanilla|caramel|honey|sugar|toffee|custard/.test(notes)) s += 1; if (smoky) s -= 3; }
+    if (a.flavor === 'spice') { if (b.type === 'Rye') s += 3; if (/spice|pepper|cinnamon|clove|anise/.test(notes)) s += 1; if (smoky) s -= 1; }
+    if (a.flavor === 'fruit') { if (['Scotch', 'Irish', 'Japanese'].includes(b.type)) s += 2; if (/fruit|apple|pear|citrus|orange|floral|honeysuckle/.test(notes)) s += 1; if (smoky) s -= 3; }
+    if (a.flavor === 'smoke') { if (smoky) s += 4; else s -= 1; }
+    if (a.exp === 'new') { if ((b.rarity || 1) <= 2) s += 1; if ((b.rarity || 1) >= 4) s -= 2; }
+    if (a.serve === 'cocktails') { if (Array.isArray(b.cocktails) && b.cocktails.length >= 2) s += 1; if ((b.rarity || 1) >= 4) s -= 1; }
+    return { b, s };
+  }).sort((x, y) => y.s - x.s);
+  matchIds = new Set();
+  scored.filter(x => x.s > 0).slice(0, 6).forEach(x => matchIds.add(x.b.id));
+  if (matchIds.size < 2) scored.slice(0, 4).forEach(x => matchIds.add(x.b.id));
+  matchesActive = true;
+}
+function showMatchBanner(){
+  const banner = $('match-banner');
+  if (!banner) return;
+  const a = quizAnswers || {};
+  const bits = [QUIZ_LABELS.flavor[a.flavor], QUIZ_LABELS.serve[a.serve]].filter(Boolean);
+  $('match-text').textContent = `${matchIds.size} bottles fit your taste${bits.length ? ` (${bits.join(', ')})` : ''} — the rest of the shelf is one click away.`;
+  banner.classList.remove('hidden');
+  renderGrid();
+}
+function clearMatches(){ matchesActive = false; const b = $('match-banner'); if (b) b.classList.add('hidden'); renderGrid(); }
+
+async function initTasteQuiz(){
+  quizAnswers = null; matchesActive = false;
+  if (AUTH_ENABLED && currentUser && currentUser.id) {
+    const { data, error } = await db.from('profiles').select('taste_prefs').eq('id', currentUser.id).single();
+    const prefs = (!error && data) ? data.taste_prefs : null;
+    if (prefs && prefs.skipped) return;
+    if (prefs && prefs.flavor) { quizAnswers = prefs; if (bottles.length) { computeMatches(); if (parseRoute().name === 'discover') showMatchBanner(); } return; }
+    startQuiz();
+  }
+}
+
+/* ============================================================
+   PAGE: BOTTLE DETAIL — two column, tabbed (Profile / Cocktails / Rate It)
+   ============================================================ */
+let bottleTab = 'profile';
+
+function aidanTakeFor(b){
+  const rar = b.rarity || 1;
+  const beginner = isBeginner(b);
+  const notes = (b.tasting_notes || '').toLowerCase();
+  const smoky = /peat|smoke|iodine|campfire/.test(notes);
+  if (smoky) return `\u201CThis one brings the smoke — a bold, memorable pour. Not a first bottle, but if you love campfire flavors, it\u2019s a destination.\u201D`;
+  if (beginner && rar === 1) return `\u201CA perfect starting point — approachable, easy to find, and genuinely delicious. You can\u2019t go wrong here.\u201D`;
+  if (beginner) return `\u201CFriendly and rewarding — a bottle that welcomes beginners but keeps enthusiasts coming back.\u201D`;
+  if (rar >= 4) return `\u201CA hunt-worthy bottle. If you spot it at retail price, that\u2019s a find — don\u2019t overthink it.\u201D`;
+  return `\u201CA step up in complexity that rewards a slow sip. Great value for what\u2019s in the glass.\u201D`;
+}
+function plainEnglishFor(b){
+  const notes = (b.tasting_notes || '').split(',').map(n => n.trim()).filter(Boolean);
+  if (!notes.length) return b.description || 'A solid pour — tasting notes coming soon.';
+  const lead = notes.slice(0, 2).join(' and ').toLowerCase();
+  const rest = notes.slice(2).join(', ').toLowerCase();
+  return `Tastes like ${lead}${rest ? `, with ${rest} underneath` : ''}. ` +
+    (isBeginner(b) ? 'Smooth enough to sip straight but interesting enough to keep you coming back.'
+                   : 'A bottle with real character — take your first sip neat before deciding how to serve it.');
+}
+
+function renderBottleDetail(id){
+  const b = bottles.find(x => x.id === id);
+  if (!b) { $('page').innerHTML = '<div class="wrap"><div class="empty-state">Bottle not found. <a href="#/discover">Back to Discover</a></div></div>'; return; }
+  openBottleId = id;
+  const mine = AUTH_ENABLED && currentUser.id ? (ratingsByBottle[id] || []).find(r => r.user_id === currentUser.id) : null;
+  myStars = mine ? mine.stars : 0;
+  const rar = RARITY[b.rarity] || RARITY[1];
+  const notes = (b.tasting_notes || '').split(',').map(n => n.trim()).filter(Boolean);
+  const img = b.image_url ? `<img src="${esc(b.image_url)}" alt="${esc(b.name)}">` : `<span class="placeholder">${esc(initials(b.name))}</span>`;
+  const inBar = myBar.some(x => x.bottle_id === id);
+
+  $('page').innerHTML = `
+  <div class="wrap">
+    <div class="crumb"><a href="#/discover">Discover</a> &nbsp;›&nbsp; <a href="#/discover" onclick="activeType='${esc(b.type)}'">${esc(b.type)}</a> &nbsp;›&nbsp; <b>${esc(b.name)}</b></div>
+    <div class="bottle-layout">
+      <aside class="bottle-left">
+        <div class="bottle-img">${img}</div>
+        <span class="type-tag">${esc(b.type)}</span>
+        <h1 style="font-size:28px; margin:2px 0;">${esc(b.name)}</h1>
+        <div class="muted" style="font-size:14px;">${esc(b.company)}</div>
+        <table class="spec-table">
+          ${SHOW_PRICES && b.price != null ? `<tr><td>Price</td><td>$${Number(b.price).toFixed(2)}</td></tr>` : ''}
+          <tr><td>Category</td><td>${esc(b.type)}</td></tr>
+          <tr><td>Availability</td><td>${esc(rar[0])}</td></tr>
+          <tr><td>Community rating</td><td>${avgFor(id) ? `<span class="stars">${starString(avgFor(id))}</span> ${avgFor(id).toFixed(1)}` : '<span class="muted">No ratings yet</span>'}</td></tr>
+        </table>
+        <div class="notes">${notes.map(n => `<span>${esc(n)}</span>`).join('')}</div>
+        <div class="pour-gauge">
+          <div class="bottle-shape"><div class="fill" style="height:${(b.rarity || 1) * 20}%"></div></div>
+          <div class="label"><b>${esc(rar[0])}</b><small>${esc(rar[1])}</small></div>
+        </div>
+        <div style="display:grid; gap:9px; margin-top:8px;">
+          ${AUTH_ENABLED ? `<button class="btn full" onclick="addToBar(${id}); this.textContent='✓ In your bar';" ${inBar?'disabled style="opacity:0.6;"':''}>${inBar ? '✓ In your bar' : '+ Add to My Bar'}</button>
+          <button class="btn ghost full ${myFavorites.has(id)?'on':''}" id="fav-btn" onclick="toggleFavorite(${id})">${myFavorites.has(id) ? '♥ On your wishlist' : '♡ Add to wishlist'}</button>` : ''}
+          <button class="btn ghost full" onclick="aidanAboutBottle(${id})">✦ Ask Aidan about this bottle</button>
+        </div>
+      </aside>
+      <section>
+        <div class="detail-tabs">
+          <button class="${bottleTab==='profile'?'active':''}" onclick="setBottleTab('profile')">📖 Profile</button>
+          <button class="${bottleTab==='cocktails'?'active':''}" onclick="setBottleTab('cocktails')">🍸 Cocktails</button>
+          <button class="${bottleTab==='rate'?'active':''}" onclick="setBottleTab('rate')">★ Rate It</button>
+        </div>
+        <div id="bottle-tab-body"></div>
+      </section>
+    </div>
+  </div>`;
+  renderBottleTab(b, mine);
+}
+function setBottleTab(t){
+  bottleTab = t;
+  const b = bottles.find(x => x.id === openBottleId);
+  const mine = AUTH_ENABLED && currentUser.id ? (ratingsByBottle[openBottleId] || []).find(r => r.user_id === currentUser.id) : null;
+  document.querySelectorAll('.detail-tabs button').forEach((btn,i) => btn.classList.toggle('active', ['profile','cocktails','rate'][i] === t));
+  renderBottleTab(b, mine);
+}
+function renderBottleTab(b, mine){
+  const body = $('bottle-tab-body');
+  if (bottleTab === 'profile') {
+    body.innerHTML = `
+      <div class="aidan-take"><div class="tag">✦ AIDAN\u2019S TAKE</div><p>${aidanTakeFor(b)}</p></div>
+      <div class="detail-section"><h3>In Plain English</h3><p>${esc(plainEnglishFor(b))}</p></div>
+      <div class="detail-section"><h3>Tasting Notes</h3>
+        <p class="muted" style="font-size:14.5px;">${esc(b.tasting_notes || 'Tasting notes coming soon.')}</p>
+      </div>
+      <div class="detail-section"><h3>The Story</h3><p>${esc(b.description || 'Story coming soon.')}</p></div>`;
+  } else if (bottleTab === 'cocktails') {
+    const list = Array.isArray(b.cocktails) ? b.cocktails : [];
+    const libMatches = COCKTAILS.filter(c => list.some(x => (x.name||'').toLowerCase().includes(c.name.toLowerCase())) || c.types.includes(b.type)).slice(0, 4);
+    body.innerHTML = `
+      ${list.length ? list.map(c => {
+        const lib = COCKTAILS.find(k => (c.name||'').toLowerCase().includes(k.name.toLowerCase()));
+        return `<div class="cocktail-block"><b>${esc(c.name)}</b><p>${esc(c.recipe)}</p>${lib ? `<a class="open-link" href="#/cocktail/${lib.slug}">Open the full recipe page →</a>` : ''}</div>`;
+      }).join('') : '<p class="muted">No recipes stored for this bottle yet — but here\u2019s what pairs with its style:</p>'}
+      ${libMatches.length ? `<div class="detail-section" style="margin-top:24px;"><h3>More cocktails for ${esc(b.type)}</h3>
+        ${libMatches.map(c => `<div class="pair-row"><div class="info"><b>${c.emoji} ${esc(c.name)}</b><small>${esc(c.spirit)} · ${c.diff} · ${c.time}</small></div><a class="open-link" href="#/cocktail/${c.slug}">Recipe →</a></div>`).join('')}
+      </div>` : ''}`;
+  } else {
+    body.innerHTML = `
+      <div class="detail-section">
+        <h3>${AUTH_ENABLED ? (mine ? 'Your rating (tap to change)' : 'Rate this bottle') : 'Ratings'}</h3>
+        ${AUTH_ENABLED ? `
+        <div class="rate-row" id="rate-row">${[1,2,3,4,5].map(n =>
+          `<button aria-label="${n} star" class="${n <= myStars ? 'lit' : ''}" onclick="setStars(${n})">★</button>`).join('')}
+        </div>
+        <div class="field"><textarea id="rate-comment" rows="2" placeholder="What did you think? (optional)">${mine && mine.comment ? esc(mine.comment) : ''}</textarea></div>
+        <button class="btn" onclick="submitRating()">${mine ? 'Update rating' : 'Post rating'}</button>
+        <div id="rate-msg" class="form-msg"></div>` :
+        `<p class="muted" style="font-size:14.5px;">Member ratings switch on when accounts go live.</p>`}
+      </div>
+      <div class="detail-section"><h3>What members say</h3><div id="reviews">${renderReviews(b.id)}</div></div>`;
+  }
+}
+function renderReviews(id){
+  const list = (ratingsByBottle[id] || []).slice().sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  if (!list.length) return '<p class="muted">Be the first to rate this one.</p>';
+  return list.map(r => `
+    <div class="review">
+      <div class="head">
+        <span class="name">${esc(namesById[r.user_id] || 'Member')}${currentUser && r.user_id === currentUser.id ? ' (you)' : ''}</span>
+        <span class="stars">${'★'.repeat(r.stars)}${'☆'.repeat(5 - r.stars)}</span>
+      </div>
+      ${r.comment ? `<p>${esc(r.comment)}</p>` : ''}
+    </div>`).join('');
+}
+function setStars(n){
+  myStars = n;
+  $('rate-row').querySelectorAll('button').forEach((b, i) => b.classList.toggle('lit', i < n));
+}
+async function submitRating(){
+  if (!AUTH_ENABLED || !currentUser || !currentUser.id) return;
+  const box = $('rate-msg');
+  if (!myStars) return msg(box, 'Pick a star rating first (1–5).', 'err');
+  const { error } = await db.from('ratings').upsert({
+    bottle_id: openBottleId, user_id: currentUser.id, stars: myStars,
+    comment: $('rate-comment').value.trim() || null
+  }, { onConflict: 'bottle_id,user_id' });
+  if (error) return msg(box, error.message, 'err');
+  msg(box, 'Rating saved. Cheers!', 'ok');
+  await refreshRatings();
+  $('reviews').innerHTML = renderReviews(openBottleId);
+}
+
+/* ---------- wishlist (favorites table) + my bar ---------- */
+async function toggleFavorite(id){
+  if (!AUTH_ENABLED || !currentUser || !currentUser.id) return;
+  let error;
+  if (myFavorites.has(id)) {
+    ({ error } = await db.from('favorites').delete().eq('bottle_id', id).eq('user_id', currentUser.id));
+    if (!error) myFavorites.delete(id);
+  } else {
+    ({ error } = await db.from('favorites').insert({ bottle_id: id, user_id: currentUser.id }));
+    if (!error) myFavorites.add(id);
+  }
+  if (error) return alert('The wishlist needs a one-time database update — run mybar-upgrade.sql in Supabase\u2019s SQL Editor, then try again.');
+  const btn = $('fav-btn');
+  if (btn) { btn.classList.toggle('on', myFavorites.has(id)); btn.textContent = myFavorites.has(id) ? '♥ On your wishlist' : '♡ Add to wishlist'; }
+  if (parseRoute().name === 'mybar') renderMyBar();
+}
+async function addToBar(id, note){
+  if (!AUTH_ENABLED || !currentUser || !currentUser.id) return;
+  if (myBar.some(x => x.bottle_id === id)) return;
+  const { data, error } = await db.from('bar_items').insert({ bottle_id: id, user_id: currentUser.id, note: note || null }).select().single();
+  if (error) return alert('My Bar needs a one-time database update — run mybar-upgrade.sql in Supabase\u2019s SQL Editor, then try again.');
+  myBar.push(data);
+  if (parseRoute().name === 'mybar') renderMyBar();
+}
+async function removeFromBar(id){
+  const { error } = await db.from('bar_items').delete().eq('bottle_id', id).eq('user_id', currentUser.id);
+  if (!error) myBar = myBar.filter(x => x.bottle_id !== id);
+  renderMyBar();
+}
+let noteTimers = {};
+function saveNote(id, value){
+  clearTimeout(noteTimers[id]);
+  noteTimers[id] = setTimeout(async () => {
+    await db.from('bar_items').update({ note: value.trim() || null }).eq('bottle_id', id).eq('user_id', currentUser.id);
+    const item = myBar.find(x => x.bottle_id === id);
+    if (item) item.note = value.trim() || null;
+  }, 600);
+}
+
+/* ============================================================
+   PAGE: COCKTAILS — sidebar + 3-column grid
+   ============================================================ */
+let cSpirit = 'All', cDiff = 'All', cSearch = '';
+function renderCocktails(){
+  const spirits = ['All','Bourbon','Rye','Scotch','Irish','Japanese'];
+  const diffs = ['All','Easy','Medium','Hard'];
+  $('page').innerHTML = `
+  <div class="wrap">
+    <div class="page-head"><h1>Cocktail Recipes</h1><p>Every recipe links back to bottles on the shelf that pair well with it.</p></div>
+    <div class="discover-layout">
+      <aside class="sidebar">
+        <details open>
+          <summary style="font-weight:700; cursor:pointer; color:var(--amber);">Filter by</summary>
+          <div class="side-group" style="margin-top:14px;">
+            <h4>Spirit Type</h4>
+            <div class="side-list">${spirits.map(s => `<button class="${s===cSpirit?'active':''}" onclick="cSpirit='${s}'; renderCocktails();">${s}</button>`).join('')}</div>
+          </div>
+          <div class="side-group">
+            <h4>Difficulty</h4>
+            <div class="side-list">${diffs.map(d => `<button class="${d===cDiff?'active':''}" onclick="cDiff='${d}'; renderCocktails();">${d}</button>`).join('')}</div>
+          </div>
+        </details>
+      </aside>
+      <section>
+        <div class="controls-row">
+          <input type="search" placeholder="🔍  Search cocktails by name, ingredient, or flavour…" value="${esc(cSearch)}" oninput="cSearch=this.value; renderCocktailGrid();">
+        </div>
+        <div class="grid cocktails" id="cocktail-grid" style="margin-top:14px;"></div>
+      </section>
+    </div>
+  </div>`;
+  renderCocktailGrid();
+}
+function renderCocktailGrid(){
+  const q = cSearch.trim().toLowerCase();
+  const list = COCKTAILS.filter(c =>
+    (cSpirit === 'All' || c.types.includes(cSpirit)) &&
+    (cDiff === 'All' || c.diff === cDiff) &&
+    (!q || c.name.toLowerCase().includes(q) || c.tagline.toLowerCase().includes(q) ||
+      c.ingredients.some(i => i[0].toLowerCase().includes(q)))
+  );
+  $('cocktail-grid').innerHTML = list.length ? list.map(c => `
+    <button class="card" onclick="go('/cocktail/${c.slug}')">
+      <div class="img" style="font-size:44px;">${c.emoji}</div>
+      <div class="body">
+        <span class="type-tag">${esc(c.spirit)}</span>
+        <h3>${esc(c.name)}</h3>
+        <div class="company">${esc(c.tagline)}</div>
+        <div class="diff-line"><span class="diff-pill ${c.diff.toLowerCase()}">${c.diff}</span><span>· ${c.time}</span></div>
+      </div>
+    </button>`).join('') : '<div class="empty-state">No cocktails match — try a different filter.</div>';
+}
+
+/* ============================================================
+   PAGE: COCKTAIL DETAIL — recipe left, embedded Aidan right
+   ============================================================ */
+let cdLog = [];
+function renderCocktailDetail(slug){
+  const c = COCKTAILS.find(x => x.slug === slug);
+  if (!c) { $('page').innerHTML = '<div class="wrap"><div class="empty-state">Recipe not found. <a href="#/cocktails">Back to Cocktails</a></div></div>'; return; }
+  const pairs = pairedBottles(c);
+  cdLog = [];
+  $('page').innerHTML = `
+  <div class="wrap">
+    <div class="crumb"><a href="#/cocktails">Cocktails</a> &nbsp;›&nbsp; <b>${esc(c.name)}</b></div>
+    <div class="cd-layout">
+      <div class="cd-main">
+        <h1>${c.emoji} ${esc(c.name)}</h1>
+        <p class="cd-sub">${esc(c.spirit)} · ${c.diff} · ${c.time} · ${c.abv} ABV</p>
+        <p style="font-size:16px;">${esc(c.tagline)}</p>
+
+        <div class="detail-section" style="margin-top:26px;"><h3>Ingredients</h3>
+          <table class="ing-table">${c.ingredients.map(i => `<tr><td>${esc(i[0])}</td><td>${esc(i[1])}</td></tr>`).join('')}</table>
+        </div>
+
+        <div class="detail-section"><h3>Method</h3>
+          ${c.method.map((m,i) => `<div class="method-step"><span class="n">${i+1}</span><span>${esc(m)}</span></div>`).join('')}
+        </div>
+
+        <div class="cd-ctas">
+          <a class="btn ghost" target="_blank" rel="noopener" href="https://www.google.com/maps/search/liquor+store+near+me">📍 Find Ingredients Near Me</a>
+          <button class="btn ghost" onclick="activeType='All'; searchQ=''; go('/discover')">→ Bottles That Pair Well</button>
+        </div>
+
+        ${pairs.length ? `<div class="detail-section" style="margin-top:30px;"><h3>Bottles that pair well</h3>
+          ${pairs.map(b => `<div class="pair-row">
+            <div class="info"><b>${esc(b.name)}</b><small>${esc(b.company)} · ${esc(b.type)} · ${esc((RARITY[b.rarity]||RARITY[1])[0])}</small></div>
+            <a class="open-link" href="#/bottle/${b.id}">View bottle →</a>
+          </div>`).join('')}
+        </div>` : ''}
+      </div>
+
+      <aside class="aidan-embed">
+        <div class="aidan-head">
+          <div class="avatar">A</div>
+          <div style="flex:1"><b>Ask Aidan</b><small>About the ${esc(c.name)} — or anything</small></div>
+        </div>
+        <div class="aidan-log" id="cd-log"></div>
+        <div class="aidan-chips">
+          <button onclick="cdAsk('Can I make this with what I own?')">Can I make this with what I own?</button>
+          <button onclick="cdAsk('What if I only have rye?')">What if I only have rye?</button>
+          <button onclick="cdAsk('How strong is this drink?')">How strong is it?</button>
+        </div>
+        <div class="aidan-input">
+          <input id="cd-text" placeholder="Ask Aidan about this cocktail…" onkeydown="if(event.key==='Enter') cdSend()">
+          <button onclick="cdSend()">→</button>
+        </div>
+      </aside>
+    </div>
+  </div>`;
+  cdSay(`Making a ${c.name}? Great call — it\u2019s ${c.diff.toLowerCase()} and takes about ${c.time}. Ask me anything: substitutions, technique, or which bottle on the shelf fits it best.`);
+}
+function cdSay(text){ const d = document.createElement('div'); d.className = 'msg aidan'; d.textContent = text; $('cd-log').appendChild(d); $('cd-log').scrollTop = $('cd-log').scrollHeight; }
+function cdUser(text){ const d = document.createElement('div'); d.className = 'msg user'; d.textContent = text; $('cd-log').appendChild(d); $('cd-log').scrollTop = $('cd-log').scrollHeight; }
+function cdAsk(t){ cdUser(t); setTimeout(() => cdSay(aidanBrain(t, currentCocktail())), 350); }
+function cdSend(){ const t = $('cd-text').value.trim(); if (!t) return; $('cd-text').value = ''; cdUser(t); setTimeout(() => cdSay(aidanBrain(t, currentCocktail())), 350); }
+function currentCocktail(){ const r = parseRoute(); return r.name === 'cocktail' ? COCKTAILS.find(c => c.slug === r.arg) : null; }
+
+/* ============================================================
+   PAGE: MY BAR — Collection / Tasting Log / Wishlist + stats
+   ============================================================ */
+let barTab = 'collection';
+function renderMyBar(){
+  if (!barTablesOk) {
+    $('page').innerHTML = `<div class="wrap"><div class="page-head"><h1>My Bar</h1></div>
+      <div class="log-cta"><div><b>One-time setup needed.</b><p class="muted" style="font-size:14px; margin-top:4px;">My Bar stores your collection and tasting log in two new database tables. Open Supabase → SQL Editor, paste in <code>mybar-upgrade.sql</code> (it came with this file), and click Run. Then refresh this page.</p></div></div></div>`;
+    return;
+  }
+  const owned = myBar.map(x => ({ ...x, bottle: bottles.find(b => b.id === x.bottle_id) })).filter(x => x.bottle);
+  const wish = bottles.filter(b => myFavorites.has(b.id));
+  const myRatingFor = id => (ratingsByBottle[id] || []).find(r => r.user_id === currentUser.id);
+  const cocktailsPossible = new Set();
+  owned.forEach(x => pairedBottlesInverse(x.bottle).forEach(n => cocktailsPossible.add(n)));
+  const avgMine = (() => { const rs = owned.map(x => myRatingFor(x.bottle_id)).filter(Boolean); return rs.length ? (rs.reduce((s,r)=>s+r.stars,0)/rs.length).toFixed(1) : '—'; })();
+
+  const collection = owned.length ? `
+    <table class="bar-table">
+      <thead><tr><th>Bottle</th><th>Category</th>${SHOW_PRICES?'<th>Price</th>':''}<th>Availability</th><th>My Rating</th><th></th></tr></thead>
+      <tbody>${owned.map(x => { const b = x.bottle; const r = myRatingFor(b.id); return `
+        <tr>
+          <td class="bname"><b>${esc(b.name)}</b><input class="note-input" value="${esc(x.note || '')}" placeholder="Add a note — \u2018my everyday pour\u2019, \u2018gifted by Brian\u2019…" oninput="saveNote(${b.id}, this.value)"></td>
+          <td>${esc(b.type)}</td>
+          ${SHOW_PRICES ? `<td>${b.price != null ? '$' + Number(b.price).toFixed(0) : '—'}</td>` : ''}
+          <td>${esc((RARITY[b.rarity]||RARITY[1])[0])}</td>
+          <td><span class="stars">${r ? '★'.repeat(r.stars)+'☆'.repeat(5-r.stars) : '—'}</span></td>
+          <td class="acts"><button class="open-link" onclick="go('/bottle/${b.id}')">View</button><button class="open-link" style="color:var(--danger);" onclick="removeFromBar(${b.id})">Remove</button></td>
+        </tr>`; }).join('')}
+      </tbody>
+    </table>` : '<div class="empty-state">Your bar is empty — tap \u201C+ Add Bottle\u201D above, or add bottles from any bottle page.</div>';
+
+  const log = `
+    <div class="log-cta">
+      <div>📓 &nbsp;Log a tasting — add notes, rate the pour, and record the occasion.</div>
+      <button class="btn" onclick="openDram()">Log a Dram →</button>
+    </div>
+    <div style="margin-top:20px;">
+      ${myTastings.length ? myTastings.map(t => { const b = bottles.find(x => x.id === t.bottle_id); return `
+        <div class="dram-entry">
+          <div class="head">
+            <b>${esc(b ? b.name : 'Bottle')} ${t.stars ? `<span class="stars" style="font-size:13px;">${'★'.repeat(t.stars)}${'☆'.repeat(5-t.stars)}</span>` : ''}</b>
+            <span class="when">${t.occasion ? esc(t.occasion) + ' · ' : ''}${new Date(t.created_at).toLocaleDateString()}</span>
+          </div>
+          ${t.notes ? `<p>${esc(t.notes)}</p>` : ''}
+        </div>`; }).join('') : '<div class="empty-state">No drams logged yet — your tasting history will live here.</div>'}
+    </div>`;
+
+  const wishlist = wish.length ? wish.map(b => `
+    <div class="account-list-row">
+      <div class="info"><b>${esc(b.name)}</b><small>${esc(b.company)} · ${esc(b.type)} · ${esc((RARITY[b.rarity]||RARITY[1])[0])}</small></div>
+      <div style="display:flex; gap:14px;">
+        <button class="open-link" onclick="addToBar(${b.id}); toggleFavorite(${b.id});">Got it! → My Bar</button>
+        <button class="open-link" onclick="go('/bottle/${b.id}')">View →</button>
+      </div>
+    </div>`).join('') : '<div class="empty-state">Nothing on the wishlist — open any bottle and tap \u201C♡ Add to wishlist\u201D.</div>';
+
+  $('page').innerHTML = `
+  <div class="wrap">
+    <div class="page-head" style="display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap;">
+      <div><h1>My Bar</h1><p>${owned.length} bottle${owned.length===1?'':'s'} in your collection</p></div>
+      <button class="btn" onclick="openPicker('bar')">+ Add Bottle</button>
+    </div>
+    <div class="subtabs">
+      <button class="${barTab==='collection'?'active':''}" onclick="barTab='collection'; renderMyBar();">My Collection</button>
+      <button class="${barTab==='log'?'active':''}" onclick="barTab='log'; renderMyBar();">Tasting Log</button>
+      <button class="${barTab==='wishlist'?'active':''}" onclick="barTab='wishlist'; renderMyBar();">Wishlist ${wish.length?`(${wish.length})`:''}</button>
+    </div>
+    ${barTab==='collection' ? collection : barTab==='log' ? log : wishlist}
+    <div class="stats-row">
+      <div class="stat-card"><div class="big">${owned.length}</div><small>Bottles in collection</small></div>
+      <div class="stat-card"><div class="big">${myTastings.length}</div><small>Drams logged</small></div>
+      <div class="stat-card"><div class="big">${avgMine}</div><small>Your average rating</small></div>
+      <div class="stat-card"><div class="big">${cocktailsPossible.size}</div><small>Cocktails you can make</small></div>
+    </div>
+    <div style="padding-bottom:60px;"></div>
+  </div>`;
+}
+function pairedBottlesInverse(b){
+  // which cocktails in the library does this bottle support?
+  return COCKTAILS.filter(c =>
+    (Array.isArray(b.cocktails)?b.cocktails:[]).some(x => (x.name||'').toLowerCase().includes(c.name.toLowerCase())) ||
+    c.types.includes(b.type)
+  ).map(c => c.name);
+}
+
+/* ---------- add-bottle picker ---------- */
+function openPicker(mode){
+  pickerMode = mode;
+  $('picker-tag').textContent = mode === 'bar' ? 'Add to my bar' : 'Add to wishlist';
+  $('picker-title').textContent = 'Pick a bottle';
+  $('picker-search').value = '';
+  renderPicker();
+  $('picker-back').classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+function closePicker(){ $('picker-back').classList.add('hidden'); document.body.style.overflow = ''; }
+function renderPicker(){
+  const q = $('picker-search').value.trim().toLowerCase();
+  const already = pickerMode === 'bar' ? new Set(myBar.map(x => x.bottle_id)) : myFavorites;
+  const list = bottles.filter(b => !q || b.name.toLowerCase().includes(q) || b.company.toLowerCase().includes(q));
+  $('picker-list').innerHTML = list.map(b => `
+    <div class="account-list-row">
+      <div class="info"><b>${esc(b.name)}</b><small>${esc(b.company)} · ${esc(b.type)}</small></div>
+      ${already.has(b.id)
+        ? '<span class="muted" style="font-size:13px;">✓ Added</span>'
+        : `<button class="btn ghost sm" onclick="pickBottle(${b.id}, this)">Add</button>`}
+    </div>`).join('') || '<p class="muted">No bottles match.</p>';
+}
+async function pickBottle(id, btn){
+  btn.disabled = true; btn.textContent = 'Adding…';
+  if (pickerMode === 'bar') await addToBar(id); else await toggleFavorite(id);
+  renderPicker();
+  if (parseRoute().name === 'mybar') renderMyBar();
+  $('picker-back').classList.remove('hidden'); // keep picker open for multi-add
+  document.body.style.overflow = 'hidden';
+}
+
+/* ---------- log a dram ---------- */
+function openDram(){
+  dramStars = 0;
+  $('dram-bottle').innerHTML = (myBar.length ? myBar.map(x => bottles.find(b => b.id === x.bottle_id)).filter(Boolean) : bottles)
+    .map(b => `<option value="${b.id}">${esc(b.name)}</option>`).join('');
+  $('dram-occasion').value = ''; $('dram-notes').value = '';
+  $('dram-stars').querySelectorAll('button').forEach(b => b.classList.remove('lit'));
+  $('dram-msg').className = 'form-msg';
+  $('dram-back').classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+function closeDram(){ $('dram-back').classList.add('hidden'); document.body.style.overflow = ''; }
+function setDramStars(n){ dramStars = n; $('dram-stars').querySelectorAll('button').forEach((b,i) => b.classList.toggle('lit', i < n)); }
+async function saveDram(){
+  const box = $('dram-msg');
+  const bottle_id = +$('dram-bottle').value;
+  if (!bottle_id) return msg(box, 'Pick a bottle first.', 'err');
+  const { data, error } = await db.from('tastings').insert({
+    user_id: currentUser.id, bottle_id,
+    occasion: $('dram-occasion').value.trim() || null,
+    stars: dramStars || null,
+    notes: $('dram-notes').value.trim() || null
+  }).select().single();
+  if (error) return msg(box, error.message + ' (Have you run mybar-upgrade.sql?)', 'err');
+  myTastings.unshift(data);
+  msg(box, 'Dram logged. Sláinte! 🥃', 'ok');
+  setTimeout(() => { closeDram(); barTab = 'log'; if (parseRoute().name === 'mybar') renderMyBar(); }, 700);
+}
+
+/* ============================================================
+   PAGE: TRENDING — community ratings
+   ============================================================ */
+function renderTrending(){
+  const rated = bottles.map(b => ({ b, avg: avgFor(b.id), n: (ratingsByBottle[b.id]||[]).length })).filter(x => x.avg != null);
+  const top = [...rated].sort((a,b) => b.avg - a.avg || b.n - a.n).slice(0, 8);
+  const most = [...rated].sort((a,b) => b.n - a.n).slice(0, 8);
+  const recent = [];
+  Object.keys(ratingsByBottle).forEach(bid => (ratingsByBottle[bid]||[]).forEach(r => recent.push({ ...r, bottle: bottles.find(b => b.id === Number(bid)) })));
+  recent.sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+
+  $('page').innerHTML = `
+  <div class="wrap">
+    <div class="page-head"><h1>Trending</h1><p>What the community is pouring, rating, and talking about.</p></div>
+    <div class="trend-layout">
+      <div>
+        <div class="trend-panel">
+          <h3>⭐ Top rated bottles</h3>
+          ${top.length ? top.map((x,i) => `<div class="trend-row"><span class="rank">${i+1}</span>
+            <div class="info"><b>${esc(x.b.name)}</b><small>${esc(x.b.type)} · ${x.n} rating${x.n===1?'':'s'}</small></div>
+            <span class="stars">${starString(x.avg)} ${x.avg.toFixed(1)}</span>
+            <button class="open-link" style="margin-left:10px;" onclick="go('/bottle/${x.b.id}')">→</button>
+          </div>`).join('') : '<p class="muted">No ratings yet — be the first to rate a bottle.</p>'}
+        </div>
+        <div class="trend-panel" style="margin-top:22px;">
+          <h3>🔥 Most rated</h3>
+          ${most.length ? most.map((x,i) => `<div class="trend-row"><span class="rank">${i+1}</span>
+            <div class="info"><b>${esc(x.b.name)}</b><small>${esc(x.b.type)}</small></div>
+            <span class="muted" style="font-size:13px;">${x.n} rating${x.n===1?'':'s'}</span>
+            <button class="open-link" style="margin-left:10px;" onclick="go('/bottle/${x.b.id}')">→</button>
+          </div>`).join('') : '<p class="muted">Nothing here yet.</p>'}
+        </div>
+      </div>
+      <div class="trend-panel">
+        <h3>💬 Latest reviews</h3>
+        ${recent.length ? recent.slice(0, 12).map(r => `
+          <div class="review">
+            <div class="head">
+              <span class="name">${esc(namesById[r.user_id] || 'Member')} on <a href="#/bottle/${r.bottle ? r.bottle.id : ''}" style="text-decoration:none;">${esc(r.bottle ? r.bottle.name : 'a bottle')}</a></span>
+              <span class="stars">${'★'.repeat(r.stars)}${'☆'.repeat(5-r.stars)}</span>
+            </div>
+            ${r.comment ? `<p>${esc(r.comment)}</p>` : ''}
+          </div>`).join('') : '<p class="muted">Reviews will appear here as members post them.</p>'}
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ============================================================
+   PAGE: SCOTCH GUIDE / PEAT MAP (public)
+   ============================================================ */
+let selectedDist = 'laphroaig';
+function renderScotchGuide(){
+  $('page').innerHTML = `
+  <div class="wrap">
+    <div class="page-head"><h1>Understanding Scotch</h1><p>Regions · Peat Levels · How to Choose — no prior knowledge required.</p></div>
+    <div class="guide-layout">
+      <div class="map-panel">
+        <h3>Interactive Scotland Peat Map</h3>
+        <p class="map-hint">Click any distillery to learn about its peat level and profile</p>
+        ${scotlandSVG()}
+        <div class="peat-scale">
+          ${PEAT_SCALE.map(p => `<div class="cell"><div class="swatch" style="background:${p[2]}"></div>${p[0]}<br><span style="opacity:0.7">${p[1]}</span></div>`).join('')}
+        </div>
+        <div class="selected-dist" id="dist-card"></div>
+      </div>
+      <div>
+        <div class="what-is-peat">
+          <h3>🔥 What is Peat?</h3>
+          <p>Peat is ancient compressed vegetation burned as fuel during whisky production. The smoke infuses the malted barley, carrying into the final spirit as the \u201Csmoky\u201D flavour. It\u2019s measured in PPM (phenol parts per million) — zero means no smoke at all; 50+ means a beach bonfire in a glass.</p>
+        </div>
+        <h3 style="font-size:18px; margin:0 0 12px;">Scottish Whisky Regions</h3>
+        ${REGIONS.map(r => `<div class="region-card"><div class="ico">${r[0]}</div><div><b>${r[1]}</b><p>${r[2]}</p></div></div>`).join('')}
+      </div>
+    </div>
+    <div style="padding-bottom:50px;"></div>
+  </div>`;
+  selectDist(selectedDist);
+}
+
+function scotlandSVG(){
+  // A stylised (not survey-grade!) Scotland: mainland + Islay + Skye + Orkney
+  const dots = DISTILLERIES.map(d => {
+    const color = PEAT_SCALE[['None','Whisper','Light','Moderate','Heavy','Intense'].indexOf(peatLabel(d.ppm))][2];
+    const anchor = d.x > 250 ? 'end' : 'start';
+    const tx = d.x > 250 ? d.x - 10 : d.x + 10;
+    return `<g class="dist" id="dist-${d.id}" onclick="selectDist('${d.id}')">
+      <circle class="dot" cx="${d.x}" cy="${d.y}" r="6.5" fill="${color}"></circle>
+      <text x="${tx}" y="${d.y + 4}" text-anchor="${anchor}">${d.name}</text>
+    </g>`;
+  }).join('');
+  return `<svg id="scotland-map" viewBox="0 0 380 510" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Stylised map of Scotland's whisky distilleries">
+    <!-- mainland -->
+    <path class="land" d="M205,20 L235,35 L228,70 L250,95 L240,130 L265,150 L300,175 L318,215 L308,255 L322,290 L300,330 L310,370 L285,400 L295,430 L260,445 L230,435 L205,450 L185,430 L195,400 L170,385 L180,355 L155,345 L165,315 L140,305 L152,275 L128,262 L142,232 L118,220 L133,190 L112,175 L128,145 L108,130 L125,100 L148,80 L165,50 Z"></path>
+    <!-- Kintyre peninsula -->
+    <path class="land" d="M150,398 L162,415 L155,455 L143,485 L128,478 L133,440 L140,412 Z"></path>
+    <!-- Islay -->
+    <path class="land" d="M40,438 L75,428 L100,442 L92,470 L60,480 L35,465 Z"></path>
+    <!-- Skye -->
+    <path class="land" d="M95,150 L130,142 L148,160 L135,185 L105,190 L88,170 Z"></path>
+    <!-- Orkney -->
+    <path class="land" d="M255,35 L288,28 L302,45 L290,65 L262,68 L250,50 Z"></path>
+    ${dots}
+  </svg>`;
+}
+function selectDist(id){
+  selectedDist = id;
+  const d = DISTILLERIES.find(x => x.id === id);
+  if (!d) return;
+  document.querySelectorAll('#scotland-map .dist').forEach(g => g.classList.toggle('sel', g.id === 'dist-' + id));
+  const inShelf = bottles.find(b => b.company.toLowerCase().includes(d.name.toLowerCase().replace('the ','')) || b.name.toLowerCase().includes(d.name.toLowerCase().replace('the ','')));
+  $('dist-card').innerHTML = `
+    <div class="head"><b>🔥 ${esc(d.name)}</b><span class="ppm">${d.ppm} PPM · Peat: ${peatLabel(d.ppm)}</span></div>
+    <div class="muted" style="font-size:13px; margin-top:2px;">${esc(d.region)} ${d.region==='Islands'?'':'region'}</div>
+    <p>\u201C${esc(d.verdict)}\u201D</p>
+    ${inShelf && currentUser ? `<a class="open-link" href="#/bottle/${inShelf.id}" style="margin-top:8px; display:inline-block;">View ${esc(inShelf.name)} on the shelf →</a>` : ''}`;
+}
+
+/* ============================================================
+   PAGE: SETTINGS
+   ============================================================ */
+function renderSettings(){
+  db.from('profiles').select('*').eq('id', currentUser.id).single().then(({ data: prof }) => {
+    const p = prof || {};
+    $('page').innerHTML = `
+    <div class="wrap" style="max-width:760px;">
+      <div class="page-head"><h1>Account Settings</h1><p>Profile, security, and preferences.</p></div>
+
+      <div class="trend-panel" style="margin-bottom:22px;">
+        <h3>Profile</h3>
+        <div class="field"><label for="acct-name">Full name</label><input id="acct-name" type="text" value="${esc(p.full_name || '')}"></div>
+        <div class="two-col">
+          <div class="field"><label for="acct-phone">Phone</label><input id="acct-phone" type="tel" value="${esc(p.phone || '')}"></div>
+          <div class="field"><label>Email</label><input type="email" value="${esc(currentUser.email || '')}" disabled>
+            <div class="hint">Email is your sign-in and can\u2019t be changed here.</div></div>
+        </div>
+        <div class="field"><label>Date of birth</label><input type="text" value="${esc(p.date_of_birth || '')}" disabled>
+          <div class="hint">Locked after sign-up — it\u2019s your age verification.</div></div>
+        <button class="btn" onclick="saveProfile()">Save changes</button>
+        <div id="acct-msg" class="form-msg"></div>
+      </div>
+
+      <div class="trend-panel" style="margin-bottom:22px;">
+        <h3>My taste profile</h3>
+        ${quizAnswers && quizAnswers.flavor
+          ? `<p style="font-size:14.5px;">${esc(QUIZ_LABELS.exp[quizAnswers.exp] || '')} · likes it ${esc(QUIZ_LABELS.flavor[quizAnswers.flavor] || '')} · mostly ${esc(QUIZ_LABELS.serve[quizAnswers.serve] || '')}</p>`
+          : '<p class="muted" style="font-size:14.5px;">Not set yet — three quick questions and the shelf sorts itself around you.</p>'}
+        <button class="btn ghost" style="margin-top:10px;" onclick="startQuiz()">${quizAnswers && quizAnswers.flavor ? 'Retake the quiz' : 'Take the 3-question quiz'}</button>
+      </div>
+
+      <div class="trend-panel" style="margin-bottom:22px;">
+        <h3>Password &amp; security</h3>
+        <div class="two-col">
+          <div class="field"><label for="np-pass">New password</label><input id="np-pass" type="password" autocomplete="new-password" placeholder="8+ characters"></div>
+          <div class="field"><label for="np-pass2">Repeat new password</label><input id="np-pass2" type="password" autocomplete="new-password"></div>
+        </div>
+        <button class="btn ghost" onclick="changePassword()">Update password</button>
+        <div id="np-msg" class="form-msg"></div>
+      </div>
+
+      <div class="trend-panel" style="margin-bottom:60px;">
+        <h3>Notifications</h3>
+        <p class="muted" style="font-size:14.5px;">Email notifications (new bottles, replies to your reviews) are coming in a future update — nothing to configure yet.</p>
+        <button class="btn ghost" style="margin-top:14px;" onclick="signOut()">Sign out of Whiskey Horizon</button>
+      </div>
+    </div>`;
+  });
+}
+async function saveProfile(){
+  const box = $('acct-msg');
+  const full_name = $('acct-name').value.trim();
+  const phone = $('acct-phone').value.trim();
+  if (!full_name) return msg(box, 'Name can\u2019t be empty.', 'err');
+  const { error } = await db.from('profiles').update({ full_name, phone }).eq('id', currentUser.id);
+  if (error) return msg(box, error.message, 'err');
+  await db.auth.updateUser({ data: { full_name, phone } });
+  namesById[currentUser.id] = full_name.split(' ')[0];
+  renderNav();
+  msg(box, 'Saved!', 'ok');
+}
+async function changePassword(){
+  const box = $('np-msg');
+  const p1 = $('np-pass').value, p2 = $('np-pass2').value;
+  if (p1.length < 8) return msg(box, 'Password needs to be at least 8 characters.', 'err');
+  if (p1 !== p2) return msg(box, 'Those two passwords don\u2019t match.', 'err');
+  const { error } = await db.auth.updateUser({ password: p1 });
+  if (error) return msg(box, error.message, 'err');
+  $('np-pass').value = ''; $('np-pass2').value = '';
+  msg(box, 'Password updated.', 'ok');
+}
+
+/* ============================================================
+   AIDAN — curated guide (v1 runs without an AI server).
+   Wire the Claude API in later without touching the pages.
+   ============================================================ */
+let aidanGreeted = false;
+const AIDAN_CHIPS = ["I'm new to whiskey", "Something smooth", "Bourbon vs scotch?", "I like smoky", "Best for cocktails", "Gift ideas"];
+
+function toggleAidan(){
+  aidanGreetOnce();
+  $('aidan-panel').classList.toggle('hidden');
+  if (!$('aidan-panel').classList.contains('hidden')) $('aidan-text').focus();
+}
+function aidanGreetOnce(){
+  if (aidanGreeted) return;
+  aidanGreeted = true;
+  aidanSay("Hey — I'm Aidan. 🥃 Whether it's your first bottle or your fiftieth, no question here is a dumb one. Tap a shortcut below or just ask.");
+  $('aidan-chips').innerHTML = AIDAN_CHIPS.map(c => `<button onclick="aidanQuick('${c.replace(/'/g, "\\'")}')">${c}</button>`).join('');
+}
+function aidanSay(text){ const d = document.createElement('div'); d.className = 'msg aidan'; d.textContent = text; $('aidan-log').appendChild(d); $('aidan-log').scrollTop = $('aidan-log').scrollHeight; }
+function aidanUser(text){ const d = document.createElement('div'); d.className = 'msg user'; d.textContent = text; $('aidan-log').appendChild(d); $('aidan-log').scrollTop = $('aidan-log').scrollHeight; }
+function aidanQuick(text){ aidanUser(text); setTimeout(() => aidanSay(aidanBrain(text)), 350); }
+function aidanSend(){
+  const t = $('aidan-text').value.trim();
+  if (!t) return;
+  $('aidan-text').value = '';
+  aidanUser(t);
+  setTimeout(() => aidanSay(aidanBrain(t)), 350);
+}
+function cheapest(list){ return list.slice().sort((a,b) => (a.price||999)-(b.price||999)); }
+
+function aidanBrain(input, cocktail){
+  const q = input.toLowerCase();
+  const has = (...words) => words.some(w => q.includes(w));
+
+  // cocktail-context answers (used by the embedded panel on recipe pages)
+  if (cocktail) {
+    if (has('what i own', 'my bar', 'do i have', 'with what i')) {
+      const owned = myBar.map(x => bottles.find(b => b.id === x.bottle_id)).filter(Boolean);
+      const fits = owned.filter(b => cocktail.types.includes(b.type));
+      if (!owned.length) return `Your bar is empty right now — add bottles in My Bar and I\u2019ll match them to recipes. For a ${cocktail.name}, any solid ${cocktail.types.join(' or ').toLowerCase()} works.`;
+      if (fits.length) return `Yes! From your bar, ${fits.map(b => b.name).join(' or ')} ${fits.length>1?'both fit':'fits'} a ${cocktail.name} perfectly. Pour with confidence.`;
+      return `Nothing in your bar matches this one yet — a ${cocktail.name} really wants ${cocktail.types.join(' or ').toLowerCase()}. Check \u201CBottles that pair well\u201D below the recipe for shelf-staple picks.`;
+    }
+    if (has('rye')) {
+      if (cocktail.types.includes('Rye')) return `Even better! Rye gives the ${cocktail.name} a spicier, drier edge — classic Prohibition-era style. Rittenhouse is the workhorse the pros reach for.`;
+      return `Rye will work in a pinch, but a ${cocktail.name} is built around ${cocktail.spirit.toLowerCase()} — expect a spicier, less rounded result. Worth trying both ways, honestly.`;
+    }
+    if (has('maker', 'wheated', 'bourbon')) {
+      if (cocktail.types.includes('Bourbon')) return `Absolutely — a wheated bourbon like Maker\u2019s Mark makes a softer, sweeter, more caramel-forward ${cocktail.name}. You can even go lighter on the bitters if you\u2019re new to this. 🥃`;
+      return `You can, but the ${cocktail.name} is really a ${cocktail.spirit.toLowerCase()} drink — bourbon will make it sweeter and rounder than intended. No cocktail police here though.`;
+    }
+    if (has('strong', 'abv', 'alcohol')) return `A ${cocktail.name} lands around ${cocktail.abv} ABV — ${parseInt(cocktail.abv.replace(/\D/g,'')) > 25 ? 'that\u2019s a spirit-forward sipper, so take it slow' : 'gentler than a neat pour, closer to a strong glass of wine'}. Ice and dilution are your friends.`;
+    if (has('substitute', 'instead', 'don\u2019t have', 'dont have', 'no ')) return `Missing something? The whiskey is the soul of a ${cocktail.name} — don\u2019t swap that. Bitters, syrups, and garnishes are flexible: honey for sugar, any citrus peel, and a splash of soda never ruined anything.`;
+  }
+
+  if (has('new', 'beginner', 'start', 'first', 'never')) {
+    const easy = bottles.filter(b => isBeginner(b));
+    const pick = easy[0] || bottles[0];
+    return "Welcome in — you picked a great hobby. My advice for a first bottle: go soft and sweet, not smoky. " +
+      (pick ? `On our shelf, ${pick.name} is a perfect starting point. ` : '') +
+      "Try it three ways: a small sip neat, then with one big ice cube, then in a simple cocktail. You'll learn what you like fast.";
+  }
+  if (has('smooth', 'easy', 'gentle', 'sweet', 'not strong')) {
+    return "For smooth and easygoing, look for two words on the label: 'wheated' (bourbon made with wheat — softer and sweeter, like Maker's Mark) or 'Speyside' (the fruity, smoke-free region of scotch, like The Glenlivet 12). Both are on the shelf — the Discover page's BEGINNER badge marks the friendly ones.";
+  }
+  if (has('smoky', 'smoke', 'peat', 'islay', 'campfire')) {
+    return "A smoke lover! The word you want is 'peat' — Islay scotches like Lagavulin 16 are the deep end (campfire, ocean, iodine). The Scotch Guide page has an interactive peat map if you want to explore. If you're peat-curious but not committed, try a Penicillin cocktail — best gateway drink ever made.";
+  }
+  if (has('bourbon vs', 'vs scotch', 'difference', 'scotch vs', 'rye vs', 'what is bourbon', 'what is scotch', 'what is rye')) {
+    return "Quick version:\n• Bourbon — American, at least 51% corn, new charred oak barrels. Sweet: vanilla, caramel.\n• Rye — at least 51% rye grain. Spicier: pepper, cinnamon. Great in cocktails.\n• Scotch — made in Scotland, usually malted barley. Ranges from fruity (Speyside) to smoky (Islay).\n• Irish — usually triple-distilled, smooth and creamy.\nSame family, different accents.";
+  }
+  if (has('cocktail', 'mix', 'drink', 'recipe', 'old fashioned', 'manhattan')) {
+    return "Three cocktails cover 90% of whiskey drinking:\n• Old Fashioned — bourbon, sugar, bitters. The classic.\n• Manhattan — rye, sweet vermouth, bitters. Elegant.\n• Highball — whiskey and soda. Effortless.\nThe Cocktails page has full recipes with steps, and every recipe links to bottles that pair well.";
+  }
+  if (has('gift', 'present', 'dad', 'friend', 'boss')) {
+    const gifts = cheapest(bottles.filter(b => (b.rarity||1) >= 2 && (b.rarity||1) <= 3));
+    return "Gifting rule: buy a step above what they'd buy themselves, in a style they already like. " +
+      (gifts.length ? `On our shelf, ${gifts[0].name}${gifts[1] ? ' and ' + gifts[1].name : ''} both look and drink like a gift. ` : '') +
+      "If they love smoke, Lagavulin 16 is the showstopper.";
+  }
+  if (has('cheap', 'budget', 'affordable', 'under')) {
+    const c = bottles.filter(b => (b.rarity||1) <= 2).slice(0, 3);
+    return "Good whiskey doesn't have to hurt. " + (c.length ? `The best value on our shelf right now: ${c.map(b => b.name).join(', ')}.` : '') + " Entry bottles from the big distilleries are the sweet spot — almost no bad choices there.";
+  }
+  if (has('rare', 'allocated', 'blanton', 'hard to find', 'unicorn', 'trophy')) {
+    return "Rarity is half the fun and half the frustration. On every bottle page, the pour gauge shows how hard it is to find — from 'shelf staple' to 'trophy bottle.' Pro tip: allocated bottles (like Blanton's) show up at random, so befriend your local shop and ask when deliveries land. Never pay double retail; there's always a similar bottle that isn't hyped.";
+  }
+  if (has('neat', 'ice', 'rocks', 'water', 'how to drink', 'how do i drink')) {
+    return "There's no wrong way, but here's the pro move: first sip always neat (nothing added) to meet the whiskey as-is. Then add a few drops of water — it genuinely opens up flavor. One big cube if you like it cold and mellow. Anyone who tells you ice is a crime is being dramatic.";
+  }
+  if (has('thanks', 'thank you', 'cheers')) return "Cheers! 🥃 I'm here whenever a bottle stumps you.";
+  return "Great question. I'm sharpest on: picking a first bottle, smooth vs smoky, bourbon/scotch/rye differences, cocktail matches, gifts, and budget picks — try one of those, or open any bottle and hit 'Ask Aidan about this bottle' and I'll break it down for you.";
+}
+
+function aidanAboutBottle(id){
+  const b = bottles.find(x => x.id === id);
+  if (!b) return;
+  $('aidan-panel').classList.remove('hidden');
+  aidanGreetOnce();
+  aidanUser('Tell me about ' + b.name);
+  const rar = RARITY[b.rarity] || RARITY[1];
+  const firstCocktail = Array.isArray(b.cocktails) && b.cocktails[0] ? b.cocktails[0].name : null;
+  const avg = avgFor(b.id);
+  setTimeout(() => aidanSay(
+    `${b.name} — ${b.type.toLowerCase()} from ${b.company}.\n\n` +
+    `Expect: ${b.tasting_notes}.\n` +
+    `Availability: ${rar[0].toLowerCase()} — ${rar[1].toLowerCase()}.\n` +
+    (firstCocktail ? `If you take it home, start with a ${firstCocktail} — the recipe's on the bottle page.\n` : '') +
+    (avg ? `Members here rate it ${avg.toFixed(1)}/5.` : `No member ratings yet — you could be the first.`)
+  ), 400);
+}
+
+/* ---------- escape key closes any open overlay ---------- */
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  if (!$('quiz-back').classList.contains('hidden')) return closeQuiz();
+  if (!$('compare-back').classList.contains('hidden')) return closeCompare();
+  if (!$('picker-back').classList.contains('hidden')) return closePicker();
+  if (!$('dram-back').classList.contains('hidden')) return closeDram();
+  if (!$('aidan-panel').classList.contains('hidden')) $('aidan-panel').classList.add('hidden');
+});
+</script>
+</body>
+</html>
