@@ -2609,7 +2609,23 @@ function aidanBrain(input, cocktail){
     return "There's no wrong way, but here's the pro move: first sip always neat (nothing added) to meet the whiskey as-is. Then add a few drops of water — it genuinely opens up flavor. One big cube if you like it cold and mellow. Anyone who tells you ice is a crime is being dramatic.";
   }
   if (has('thanks', 'thank you', 'cheers')) return "Cheers! 🥃 I'm here whenever a bottle stumps you.";
+  logUnanswered(input);
   return "Great question. I'm sharpest on: picking a first bottle, smooth vs smoky, bourbon/scotch/rye differences, cocktail matches, gifts, and budget picks — try one of those, or open any bottle and hit 'Ask Aidan about this bottle' and I'll break it down for you.";
+}
+
+/* Quietly record questions Aidan couldn't answer, so the owners can
+   teach him via the dashboard. Deduped per session; failures ignored
+   (e.g. before aidan-log-upgrade.sql has been run). */
+const loggedMisses = new Set();
+function logUnanswered(qtext){
+  try {
+    if (!db || !AUTH_ENABLED || !currentUser || !currentUser.id) return;
+    const key = String(qtext || '').trim().toLowerCase();
+    if (!key || loggedMisses.has(key)) return;
+    loggedMisses.add(key);
+    db.from('aidan_unanswered').insert({ question: String(qtext).trim().slice(0, 300) })
+      .then(() => {}, () => {});
+  } catch (_) {}
 }
 
 function aidanAboutBottle(id){
