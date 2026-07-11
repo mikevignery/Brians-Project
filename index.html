@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Whiskey Horizon — Whiskey discovery for every level</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -129,12 +129,13 @@ a { color: var(--amber); }
   border-radius: 8px; padding: 8px 14px; font-weight: 700; font-size: 14px;
 }
 .aidan-nav-btn:hover { background: rgba(227,155,45,0.28); }
-#nav-burger { display: none; background: none; border: 1px solid var(--line); color: var(--paper); border-radius: 7px; padding: 7px 11px; font-size: 17px; }
+#nav-burger { display: none; background: none; border: 1px solid var(--line); color: var(--paper); border-radius: 7px; padding: 7px 12px; font-size: 18px; min-height: 42px; }
+.menu-account { display: none; }
 
 /* ============================================================
    PAGE SHELL
    ============================================================ */
-#page { min-height: calc(100vh - 63px); }
+#page { min-height: calc(100vh - 63px); min-height: calc(100dvh - 63px); }
 .wrap { max-width: 1220px; margin: 0 auto; padding: 0 28px; }
 .page-head { padding: 34px 0 8px; }
 .page-head h1 { font-size: clamp(26px, 4vw, 36px); }
@@ -202,7 +203,7 @@ a { color: var(--amber); }
 /* ============================================================
    AUTH PAGES (sign up / log in) — two column like the wireframe
    ============================================================ */
-.auth-layout { min-height: calc(100vh - 63px); display: grid; grid-template-columns: 1.05fr 1fr; }
+.auth-layout { min-height: calc(100vh - 63px); min-height: calc(100dvh - 63px); display: grid; grid-template-columns: 1.05fr 1fr; }
 .auth-hero {
   padding: 56px; display: flex; flex-direction: column; justify-content: space-between;
   background: radial-gradient(ellipse 90% 60% at 20% 110%, rgba(227,155,45,0.16), transparent 60%), var(--char);
@@ -499,7 +500,7 @@ a { color: var(--amber); }
 }
 #aidan-panel {
   position: fixed; right: 24px; bottom: 92px; z-index: 80;
-  width: min(380px, calc(100vw - 40px)); height: min(540px, 70vh);
+  width: min(380px, calc(100vw - 40px)); height: min(540px, 70vh); height: min(540px, 70dvh);
   background: var(--barrel); border: 1px solid var(--line); border-radius: 14px;
   display: flex; flex-direction: column; overflow: hidden;
   box-shadow: 0 18px 60px rgba(0,0,0,0.55);
@@ -536,41 +537,135 @@ a { color: var(--amber); }
   .trend-layout, .guide-layout { grid-template-columns: 1fr; }
   .map-panel { position: static; }
   .about-band { grid-template-columns: 1fr; }
+  #site-nav .who { display: none; }
 }
 @media (max-width: 767px) {
-  #site-nav { padding: 12px 16px; gap: 12px; }
+  /* ---- top bar: wordmark + Aidan + burger only; account moves into the menu ---- */
+  #site-nav {
+    padding: 10px 14px;
+    padding-left: max(14px, env(safe-area-inset-left));
+    padding-right: max(14px, env(safe-area-inset-right));
+    gap: 10px;
+  }
+  .wordmark { font-size: 19px; margin-right: auto; }
+  .desktop-only { display: none !important; }
+  .aidan-nav-btn { padding: 9px 12px; font-size: 13.5px; min-height: 42px; }
+  #nav-burger { display: block; }
   #site-nav .links {
     display: none; position: absolute; top: 100%; left: 0; right: 0;
-    flex-direction: column; background: var(--barrel); border-bottom: 1px solid var(--line); padding: 8px 12px 14px;
+    flex-direction: column; gap: 2px;
+    background: var(--barrel); border-bottom: 1px solid var(--line);
+    padding: 10px 14px 14px;
+    box-shadow: 0 18px 40px rgba(0,0,0,0.45);
+    max-height: calc(100dvh - 62px); overflow-y: auto;
   }
   #site-nav .links.open { display: flex; }
-  #site-nav .who { display: none; }
-  #nav-burger { display: block; }
+  #site-nav .links a {
+    display: flex; align-items: center; min-height: 46px;
+    font-size: 16px; padding: 10px 12px; border-radius: 9px;
+  }
+  #site-nav .links a.active { background: rgba(227,155,45,0.1); }
+  #site-nav .links a.active::after { display: none; }
+  .menu-account {
+    display: block; border-top: 1px solid var(--line);
+    margin-top: 8px; padding-top: 10px;
+  }
+  .menu-account .who { display: block; color: var(--muted); font-size: 13px; padding: 2px 12px 8px; }
+  .menu-account a { color: var(--muted); text-decoration: none; font-weight: 700; }
+
+  /* ---- global rhythm ---- */
   .wrap { padding: 0 16px; }
-  .hero { grid-template-columns: 1fr; padding: 40px 0 34px; gap: 28px; }
+  .page-head { padding: 24px 0 6px; }
+  body { -webkit-text-size-adjust: 100%; }
+  /* 16px inputs stop iOS Safari from zooming the page on focus */
+  .field input, .field select, .field textarea,
+  .controls-row input[type=search], .result-row select,
+  .aidan-input input, .bar-table .note-input, textarea { font-size: 16px !important; }
+  .btn { padding: 13px 20px; }
+  .btn.sm { padding: 10px 14px; min-height: 42px; }
+
+  /* ---- landing ---- */
+  .hero { grid-template-columns: 1fr; padding: 36px 0 30px; gap: 26px; }
   .hero-shelf { display: none; }               /* hero is text-only above the fold on mobile */
-  .value-grid { grid-template-columns: 1fr; }
+  .hero .ctas .btn { flex: 1; text-align: center; }
+  .value-grid { grid-template-columns: 1fr; gap: 12px; padding-bottom: 40px; }
   .featured .strip { grid-template-columns: repeat(2, 1fr); }
-  .auth-layout { grid-template-columns: 1fr; }
+  .site-footer .wrap { flex-direction: column; align-items: flex-start; gap: 10px; }
+
+  /* ---- auth ---- */
+  .auth-layout { grid-template-columns: 1fr; min-height: 0; }
   .auth-hero { display: none; }
-  .discover-layout { grid-template-columns: 1fr; }
+  .auth-panel { padding: 26px 16px 46px; }
+  .auth-card { padding: 24px 18px; }
+
+  /* ---- discover ---- */
+  .discover-layout { grid-template-columns: 1fr; gap: 16px; padding-top: 18px; }
   .sidebar { position: static; }
   .sidebar details { border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; background: var(--barrel); }
+  .side-list button, .side-check { min-height: 42px; }
+  .controls-row input[type=search] { min-width: 0; width: 100%; flex: 1 1 100%; }
+  .result-row { flex-direction: row; }
+  .result-row select { flex: 1; max-width: 60%; }
   .grid { grid-template-columns: repeat(2, 1fr); gap: 11px; }
   .grid.cocktails { grid-template-columns: 1fr; }
-  .card .img { height: 120px; }
-  .bottle-layout { grid-template-columns: 1fr; }
+  .card .img { height: 118px; }
+  .card h3 { font-size: 15px; }
+  .card .body { padding: 11px 12px 13px; }
+  #compare-tray { left: 12px; right: 12px; transform: none; flex-wrap: wrap; justify-content: center; bottom: max(14px, env(safe-area-inset-bottom)); }
+
+  /* ---- bottle detail ---- */
+  .bottle-layout { grid-template-columns: 1fr; padding-top: 14px; gap: 8px; }
   .bottle-left { position: static; }
-  .about-grid { grid-template-columns: 1fr; }
-  .stats-row { grid-template-columns: repeat(2, 1fr); }
-  .two-col, .three-col { grid-template-columns: 1fr; }
-  /* My Bar table becomes stacked cards on mobile */
+  .bottle-img { height: 210px; }
+  .bottle-left .btn, .bottle-left .txt-btn { width: 100%; text-align: center; margin-bottom: 8px; }
+  .detail-tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .detail-tabs::-webkit-scrollbar { display: none; }
+  .detail-tabs button { white-space: nowrap; padding: 12px 13px; }
+
+  /* ---- cocktails ---- */
+  .cd-layout { padding-top: 14px; }
+  .cd-ctas .btn { flex: 1 1 100%; text-align: center; }
+  .aidan-embed { height: 420px; }
+
+  /* ---- my bar ---- */
+  .subtabs { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .subtabs::-webkit-scrollbar { display: none; }
+  .subtabs button { white-space: nowrap; min-height: 46px; }
+  .stats-row { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .stat-card { padding: 16px 12px; }
+  .stat-card .big { font-size: 26px; }
+  .log-cta .btn { width: 100%; text-align: center; }
+  /* the table becomes stacked cards */
   .bar-table thead { display: none; }
   .bar-table, .bar-table tbody, .bar-table tr, .bar-table td { display: block; width: 100%; }
-  .bar-table tr { border: 1px solid var(--line); border-radius: 10px; margin-bottom: 12px; background: var(--barrel); padding: 6px 4px; }
+  .bar-table tr { border: 1px solid var(--line); border-radius: 10px; margin-bottom: 12px; background: var(--barrel); padding: 8px 4px; }
   .bar-table td { border-bottom: none; padding: 7px 14px; }
+  .bar-table td[data-label]::before { content: attr(data-label); display: block; font-size: 10.5px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--muted); margin-bottom: 3px; }
+  .bar-table .acts { display: flex; gap: 8px; padding-top: 10px; }
+  .bar-table .acts button { margin-left: 0; flex: 1; min-height: 40px; }
+
+  /* ---- trending / guide / about ---- */
+  .trend-panel { padding: 18px 16px; }
+  .about-grid { grid-template-columns: 1fr; }
+  .about-band { padding: 24px 20px; }
+  .peat-scale .cell { font-size: 9.5px; }
+  .map-panel { padding: 16px 12px; }
+
+  /* ---- shared bits ---- */
+  .two-col, .three-col { grid-template-columns: 1fr; }
+  .modal-back { padding: 18px 12px 30px; align-items: flex-start; }
   .modal { padding: 20px 16px; }
-  #aidan-panel { height: min(460px, 62vh); }
+  .rate-row button { font-size: 36px; }        /* fatter tap targets for stars */
+
+  /* ---- Aidan: full-width sheet on phones ---- */
+  #aidan-fab { right: 16px; bottom: max(16px, env(safe-area-inset-bottom)); }
+  #aidan-panel {
+    right: 10px; left: 10px; width: auto;
+    bottom: calc(max(16px, env(safe-area-inset-bottom)) + 66px);
+    height: min(520px, 68dvh);
+  }
+  .aidan-chips button { min-height: 34px; }
+  .aidan-input button { min-width: 58px; min-height: 44px; }
 }
 @media (min-width: 768px) {
   .sidebar details { border: none; padding: 0; }
@@ -593,7 +688,7 @@ a { color: var(--amber); }
 <!-- ============================ SITE NAV ============================ -->
 <header id="site-nav" class="hidden">
   <a class="wordmark" href="#/">Whiskey<span class="dot">Horizon</span></a>
-  <button id="nav-burger" onclick="document.querySelector('#site-nav .links').classList.toggle('open')" aria-label="Menu">☰</button>
+  <button id="nav-burger" onclick="toggleMenu()" aria-label="Menu" aria-expanded="false">☰</button>
   <nav class="links" id="nav-links"></nav>
   <div class="right" id="nav-right"></div>
 </header>
@@ -900,25 +995,44 @@ window.addEventListener('hashchange', route);
 /* ============================================================
    NAV
    ============================================================ */
+function toggleMenu(){
+  const m = document.querySelector('#site-nav .links');
+  const open = m.classList.toggle('open');
+  $('nav-burger').setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+document.addEventListener('click', e => {
+  const m = document.querySelector('#site-nav .links');
+  if (m && m.classList.contains('open') && !e.target.closest('#site-nav')) m.classList.remove('open');
+});
 function renderNav(){
   const r = parseRoute();
   const link = (path, label) => `<a href="#${path}" class="${('/'+r.name).startsWith(path) && path!=='/' ? 'active' : (path==='/'&&r.name==='landing'?'active':'')}">${label}</a>`;
   if (currentUser) {
+    const name = (currentUser.user_metadata && currentUser.user_metadata.full_name) || currentUser.email;
     $('nav-links').innerHTML =
       link('/discover','Discover') + link('/cocktails','Cocktails') + link('/mybar','My Bar') +
-      link('/trending','Trending') + link('/scotch-guide','Scotch Guide');
-    const name = (currentUser.user_metadata && currentUser.user_metadata.full_name) || currentUser.email;
+      link('/trending','Trending') + link('/scotch-guide','Scotch Guide') +
+      (AUTH_ENABLED ? `
+      <div class="menu-account">
+        <span class="who">Cheers, ${esc(String(name).split(' ')[0])}</span>
+        <a href="#/settings" class="${r.name==='settings'?'active':''}">⚙ Settings</a>
+        <a href="#/" onclick="signOut(); return false;">Sign out</a>
+      </div>` : '');
     $('nav-right').innerHTML = `
       <span class="who">${AUTH_ENABLED ? 'Cheers, ' + esc(String(name).split(' ')[0]) : 'Preview mode'}</span>
       <button class="aidan-nav-btn" onclick="toggleAidan()">✦ Aidan</button>
-      ${AUTH_ENABLED ? `<button class="btn ghost sm" onclick="go('/settings')">Settings</button>
-      <button class="btn ghost sm" onclick="signOut()">Sign out</button>` : ''}`;
+      ${AUTH_ENABLED ? `<button class="btn ghost sm desktop-only" onclick="go('/settings')">Settings</button>
+      <button class="btn ghost sm desktop-only" onclick="signOut()">Sign out</button>` : ''}`;
   } else {
     $('nav-links').innerHTML = link('/about','About') + link('/scotch-guide','Scotch Guide');
     $('nav-right').innerHTML = `
       <a class="btn ghost sm" href="#/login">Log In</a>
-      <a class="btn sm" href="#/signup">Sign Up →</a>`;
+      <a class="btn sm" href="#/signup">Sign Up</a>`;
   }
+  const menu = document.querySelector('#site-nav .links');
+  if (menu) menu.classList.remove('open');
+  const burger = $('nav-burger');
+  if (burger) burger.setAttribute('aria-expanded', 'false');
   $('site-nav').classList.remove('hidden');
 }
 
@@ -1839,10 +1953,10 @@ function renderMyBar(){
       <tbody>${owned.map(x => { const b = x.bottle; const r = myRatingFor(b.id); return `
         <tr>
           <td class="bname"><b>${esc(b.name)}</b><input class="note-input" value="${esc(x.note || '')}" placeholder="Add a note — \u2018my everyday pour\u2019, \u2018gifted by Brian\u2019…" oninput="saveNote(${b.id}, this.value)"></td>
-          <td>${esc(b.type)}</td>
-          ${SHOW_PRICES ? `<td>${b.price != null ? '$' + Number(b.price).toFixed(0) : '—'}</td>` : ''}
-          <td>${esc((RARITY[b.rarity]||RARITY[1])[0])}</td>
-          <td><span class="stars">${r ? '★'.repeat(r.stars)+'☆'.repeat(5-r.stars) : '—'}</span></td>
+          <td data-label="Category">${esc(b.type)}</td>
+          ${SHOW_PRICES ? `<td data-label="Price">${b.price != null ? '$' + Number(b.price).toFixed(0) : '—'}</td>` : ''}
+          <td data-label="Availability">${esc((RARITY[b.rarity]||RARITY[1])[0])}</td>
+          <td data-label="My Rating"><span class="stars">${r ? '★'.repeat(r.stars)+'☆'.repeat(5-r.stars) : '—'}</span></td>
           <td class="acts"><button class="open-link" onclick="go('/bottle/${b.id}')">View</button><button class="open-link" style="color:var(--danger);" onclick="removeFromBar(${b.id})">Remove</button></td>
         </tr>`; }).join('')}
       </tbody>
