@@ -921,7 +921,7 @@ const GUEST_USER = { id: null, email: 'guest', user_metadata: { full_name: 'Gues
    The Cocktails page reads from this list. "Bottles that pair
    well" is matched automatically: first by recipes stored on
    bottles in Supabase, then by spirit type. Add cocktails here. */
-const COCKTAILS = [
+const BUILTIN_COCKTAILS = [
   { slug: 'old-fashioned', name: 'Old Fashioned', emoji: '🥃', spirit: 'Bourbon or Rye', types: ['Bourbon','Rye'], diff: 'Easy', time: '4 min', abv: '~32%',
     tagline: 'The original cocktail — whiskey, sugar, bitters. Three ingredients, limitless depth.',
     ingredients: [['Bourbon or rye','2 oz'],['Sugar cube','1'],['Cocktail bitters','2–3 dashes'],['Large ice cube','1'],['Orange peel, garnish','1 strip']],
@@ -971,6 +971,7 @@ const COCKTAILS = [
     ingredients: [['Irish whiskey','1.5 oz'],['Hot strong coffee','4 oz'],['Brown sugar','2 tsp'],['Lightly whipped cream','float']],
     method: ['Warm a glass mug with hot water, then dump it','Add coffee and sugar, stir to dissolve','Add the whiskey','Float lightly whipped cream on top by pouring over a spoon'] }
 ];
+let COCKTAILS = BUILTIN_COCKTAILS;   // replaced by DB rows when cocktails-upgrade.sql has been run
 
 /* ---------- Scotch guide data ---------- */
 const REGIONS = [
@@ -1274,6 +1275,11 @@ async function loadEverything(){
     const { data: faq, error: fe } = await db.from('aidan_faq').select('*').eq('active', true);
     aidanFaq = fe ? [] : (faq || []);
   } catch (_) { aidanFaq = []; }
+  // cocktail library from the DB (optional table — falls back to the built-in 12)
+  try {
+    const { data: cx, error: ce } = await db.from('cocktails').select('*').order('sort').order('name');
+    COCKTAILS = (!ce && cx && cx.length) ? cx : BUILTIN_COCKTAILS;
+  } catch (_) { COCKTAILS = BUILTIN_COCKTAILS; }
   if (be) { console.warn(be.message); }
   bottles = (b || []).filter(x => x.published !== false); // hide pending suggestions (admins can see them in the DB)
   ratingsByBottle = {};
@@ -1305,8 +1311,8 @@ async function refreshRatings(){
    PAGE: LANDING (public)
    ============================================================ */
 const FEATURED_STATIC = [
-  ['🥃','Buffalo Trace','Bourbon'],['🍮','Maker\u2019s Mark','Bourbon'],['🦌','Glenfiddich 12','Scotch'],
-  ['🔥','Laphroaig 10','Scotch'],['☘️','Jameson','Irish']
+  ['🥃','Buffalo Trace','Bourbon'],['🍮','Maker\u2019s Mark','Bourbon'],['🦌','Glenfiddich 12 Year','Scotch'],
+  ['🔥','Laphroaig 10 Year','Scotch'],['☘️','Jameson','Irish']
 ];
 function renderLanding(){
   $('page').innerHTML = `
@@ -1866,6 +1872,7 @@ function renderBottleDetail(id){
         <table class="spec-table">
           ${SHOW_PRICES && b.price != null ? `<tr><td>Price</td><td>$${Number(b.price).toFixed(2)}</td></tr>` : ''}
           <tr><td>Category</td><td>${esc(b.type)}</td></tr>
+          ${b.proof ? `<tr><td>Proof</td><td>${b.proof} (${(b.proof/2).toFixed(1)}% ABV)</td></tr>` : ''}
           <tr><td>Availability</td><td>${esc(rar[0])}</td></tr>
           <tr><td>Community rating</td><td>${avgFor(id) ? `<span class="stars">${starString(avgFor(id))}</span> ${avgFor(id).toFixed(1)}` : '<span class="muted">No ratings yet</span>'}</td></tr>
         </table>
