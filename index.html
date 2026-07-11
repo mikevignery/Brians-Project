@@ -28,6 +28,36 @@
   --ok: #8fae6b;
   --radius: 10px;
 }
+
+/* ============ LIGHT THEME — client palette ============
+   navy #172234 · orange #eb962b · cream #fbe5c6 (bg) · teal #608f8d · rust #9c4e12 */
+body.light {
+  --char: #fbe5c6;          /* cream background (middle swatch) */
+  --barrel: #fdf3e1;        /* panels & cards — lighter cream */
+  --barrel-2: #f3dcb5;      /* raised surfaces */
+  --amber: #c17110;         /* palette orange, deepened just enough to read on cream */
+  --amber-deep: #9c4e12;    /* rust */
+  --copper: #9c4e12;        /* rust */
+  --paper: #172234;         /* navy = text */
+  --muted: #5d6577;         /* desaturated navy */
+  --line: rgba(23, 34, 52, 0.16);
+  --danger: #b34a2e;
+  --ok: #4d807d;            /* teal */
+}
+body.light .type-tag { color: #4d807d; border-color: rgba(96, 143, 141, 0.55); }
+body.light .badge-beginner { background: #608f8d; color: #fff; }
+body.light .msg.user { background: rgba(96, 143, 141, 0.14); border-color: rgba(96, 143, 141, 0.4); }
+body.light #site-nav .links { box-shadow: 0 18px 40px rgba(23, 34, 52, 0.16); }
+body.light .modal, body.light #theme-toggle {
+  position: fixed; right: 24px; bottom: 24px; z-index: 79;
+  width: 48px; height: 48px; border-radius: 50%;
+  background: var(--barrel-2); border: 1px solid var(--line); color: var(--paper);
+  font-size: 20px; cursor: pointer; box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+  display: flex; align-items: center; justify-content: center;
+}
+#theme-toggle:hover { border-color: var(--amber); }
+#aidan-panel { box-shadow: 0 24px 70px rgba(23, 34, 52, 0.22); }
+
 * { margin: 0; padding: 0; box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 body {
@@ -397,6 +427,10 @@ a { color: var(--amber); }
 .dram-entry { border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; margin-bottom: 12px; background: var(--barrel); }
 .dram-entry .head { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .dram-entry .when { color: var(--muted); font-size: 13px; }
+.dram-acts { display: flex; gap: 16px; margin-top: 10px; }
+.dram-acts .txt-btn { font-size: 13px; }
+.txt-btn.danger { color: #d98a7f; }
+.picker-remove { border-color: rgba(217,138,127,0.4); color: #d98a7f; }
 .dram-entry p { color: var(--muted); font-size: 14px; margin-top: 6px; }
 .account-list-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--line); }
 .account-list-row .info b { display: block; font-size: 15px; }
@@ -492,7 +526,7 @@ a { color: var(--amber); }
    AIDAN (global floating panel)
    ============================================================ */
 #aidan-panel {
-  position: fixed; right: 24px; bottom: 24px; z-index: 80;
+  position: fixed; right: 24px; bottom: 84px; z-index: 80;
   width: min(380px, calc(100vw - 40px)); height: min(540px, 70vh); height: min(540px, 70dvh);
   background: var(--barrel); border: 1px solid var(--line); border-radius: 14px;
   display: flex; flex-direction: column; overflow: hidden;
@@ -671,10 +705,11 @@ a { color: var(--amber); }
   .rate-row button { font-size: 36px; }        /* fatter tap targets for stars */
 
   /* ---- Aidan: full-width sheet on phones ---- */
+  #theme-toggle { right: 16px; bottom: max(16px, env(safe-area-inset-bottom)); width: 44px; height: 44px; }
   #aidan-panel {
     right: 10px; left: 10px; width: auto;
-    bottom: max(16px, env(safe-area-inset-bottom));
-    height: min(520px, 68dvh);
+    bottom: calc(max(16px, env(safe-area-inset-bottom)) + 58px);
+    height: min(520px, 66dvh);
   }
   .aidan-chips button { min-height: 34px; }
   .aidan-input button { min-width: 58px; min-height: 44px; }
@@ -764,7 +799,7 @@ a { color: var(--amber); }
 <div id="dram-back" class="modal-back hidden" onclick="if(event.target===this) closeDram()">
   <div class="modal" role="dialog" aria-modal="true" style="max-width:520px;">
     <div class="modal-actions"><button class="txt-btn" onclick="closeDram()">Close</button></div>
-    <div class="modal-info"><span class="type-tag">Tasting log</span><h2>Log a dram</h2></div>
+    <div class="modal-info"><span class="type-tag">Tasting log</span><h2 id="dram-title">Log a dram</h2></div>
     <div style="margin-top:16px;">
       <div class="field"><label for="dram-bottle">Bottle</label><select id="dram-bottle"></select></div>
       <div class="field"><label for="dram-occasion">Occasion (optional)</label><input id="dram-occasion" type="text" placeholder="Friday nightcap, birthday pour, tasting with Brian…"></div>
@@ -781,6 +816,7 @@ a { color: var(--amber); }
 </div>
 
 <!-- ============================ AIDAN (global) ============================ -->
+<button id="theme-toggle" onclick="toggleTheme()" title="Switch color scheme" aria-label="Switch color scheme">☀️</button>
 <div id="aidan-panel" class="hidden">
   <div class="aidan-head">
     <div class="avatar">A</div>
@@ -1023,11 +1059,11 @@ function renderNav(){
     const name = (currentUser.user_metadata && currentUser.user_metadata.full_name) || currentUser.email;
     $('nav-links').innerHTML =
       link('/discover','Discover') + link('/cocktails','Cocktails') + link('/mybar','My Bar') +
-      link('/trending','Trending') + link('/scotch-guide','Scotch Guide') +
+      link('/trending','Trending') + link('/scotch-guide','Scotch Guide') + link('/about','About') +
       (AUTH_ENABLED ? `
       <div class="menu-account">
         <span class="who">Cheers, ${esc(String(name).split(' ')[0])}</span>
-        <a href="#/settings" class="${r.name==='settings'?'active':''}">⚙ Settings</a>
+        <a href="#/settings" class="${r.name==='settings'?'active':''}">My Account</a>
         <a href="#/" onclick="signOut(); return false;">Sign out</a>
       </div>` : '');
     $('nav-right').innerHTML = `
@@ -2044,6 +2080,10 @@ function renderMyBar(){
             <span class="when">${t.occasion ? esc(t.occasion) + ' · ' : ''}${new Date(t.created_at).toLocaleDateString()}</span>
           </div>
           ${t.notes ? `<p>${esc(t.notes)}</p>` : ''}
+          <div class="dram-acts">
+            <button class="txt-btn" onclick="openDram(${t.id})">✎ Edit</button>
+            <button class="txt-btn danger" onclick="deleteDram(${t.id})">Delete</button>
+          </div>
         </div>`; }).join('') : '<div class="empty-state">No drams logged yet — your tasting history will live here.</div>'}
     </div>`;
 
@@ -2104,9 +2144,17 @@ function renderPicker(){
     <div class="account-list-row">
       <div class="info"><b>${esc(b.name)}</b><small>${esc(b.company)} · ${esc(b.type)}</small></div>
       ${already.has(b.id)
-        ? '<span class="muted" style="font-size:13px;">✓ Added</span>'
+        ? `<button class="btn ghost sm picker-remove" onclick="unpickBottle(${b.id}, this)">✓ Added — Remove</button>`
         : `<button class="btn ghost sm" onclick="pickBottle(${b.id}, this)">Add</button>`}
     </div>`).join('') || '<p class="muted">No bottles match.</p>';
+}
+async function unpickBottle(id, btn){
+  btn.disabled = true; btn.textContent = 'Removing…';
+  if (pickerMode === 'bar') await removeFromBar(id); else await toggleFavorite(id);
+  renderPicker();
+  if (parseRoute().name === 'mybar') renderMyBar();
+  $('picker-back').classList.remove('hidden'); // keep picker open, same as adding
+  document.body.style.overflow = 'hidden';
 }
 async function pickBottle(id, btn){
   btn.disabled = true; btn.textContent = 'Adding…';
@@ -2118,15 +2166,32 @@ async function pickBottle(id, btn){
 }
 
 /* ---------- log a dram ---------- */
-function openDram(){
-  dramStars = 0;
-  $('dram-bottle').innerHTML = (myBar.length ? myBar.map(x => bottles.find(b => b.id === x.bottle_id)).filter(Boolean) : bottles)
-    .map(b => `<option value="${b.id}">${esc(b.name)}</option>`).join('');
-  $('dram-occasion').value = ''; $('dram-notes').value = '';
-  $('dram-stars').querySelectorAll('button').forEach(b => b.classList.remove('lit'));
+let dramEditId = null;
+function openDram(editId){
+  dramEditId = editId || null;
+  const t = dramEditId ? myTastings.find(x => x.id === dramEditId) : null;
+  $('dram-title').textContent = t ? 'Edit dram' : 'Log a dram';
+  // when editing, make sure the tasted bottle is in the dropdown even if it left the bar
+  let opts = (myBar.length ? myBar.map(x => bottles.find(b => b.id === x.bottle_id)).filter(Boolean) : bottles);
+  if (t && !opts.some(b => b.id === t.bottle_id)) {
+    const extra = bottles.find(b => b.id === t.bottle_id);
+    if (extra) opts = [extra, ...opts];
+  }
+  $('dram-bottle').innerHTML = opts.map(b => `<option value="${b.id}">${esc(b.name)}</option>`).join('');
+  if (t) $('dram-bottle').value = t.bottle_id;
+  $('dram-occasion').value = t && t.occasion ? t.occasion : '';
+  $('dram-notes').value = t && t.notes ? t.notes : '';
+  setDramStars(t && t.stars ? t.stars : 0);
   $('dram-msg').className = 'form-msg';
   $('dram-back').classList.remove('hidden');
   document.body.style.overflow = 'hidden';
+}
+async function deleteDram(id){
+  if (!confirm('Delete this tasting entry? This can\u2019t be undone.')) return;
+  const { error } = await db.from('tastings').delete().eq('id', id).eq('user_id', currentUser.id);
+  if (error) return alert(error.message);
+  myTastings = myTastings.filter(t => t.id !== id);
+  if (parseRoute().name === 'mybar') renderMyBar();
 }
 function closeDram(){ $('dram-back').classList.add('hidden'); document.body.style.overflow = ''; }
 function setDramStars(n){ dramStars = n; $('dram-stars').querySelectorAll('button').forEach((b,i) => b.classList.toggle('lit', i < n)); }
@@ -2134,15 +2199,24 @@ async function saveDram(){
   const box = $('dram-msg');
   const bottle_id = +$('dram-bottle').value;
   if (!bottle_id) return msg(box, 'Pick a bottle first.', 'err');
-  const { data, error } = await db.from('tastings').insert({
-    user_id: currentUser.id, bottle_id,
+  const payload = {
+    bottle_id,
     occasion: $('dram-occasion').value.trim() || null,
     stars: dramStars || null,
     notes: $('dram-notes').value.trim() || null
-  }).select().single();
-  if (error) return msg(box, error.message + ' (Have you run mybar-upgrade.sql?)', 'err');
-  myTastings.unshift(data);
-  msg(box, 'Dram logged. Sláinte! 🥃', 'ok');
+  };
+  if (dramEditId) {
+    const { error } = await db.from('tastings').update(payload).eq('id', dramEditId).eq('user_id', currentUser.id);
+    if (error) return msg(box, error.message, 'err');
+    const t = myTastings.find(x => x.id === dramEditId);
+    if (t) Object.assign(t, payload);
+    msg(box, 'Entry updated. 🥃', 'ok');
+  } else {
+    const { data, error } = await db.from('tastings').insert({ user_id: currentUser.id, ...payload }).select().single();
+    if (error) return msg(box, error.message + ' (Have you run mybar-upgrade.sql?)', 'err');
+    myTastings.unshift(data);
+    msg(box, 'Dram logged. Sláinte! 🥃', 'ok');
+  }
   setTimeout(() => { closeDram(); barTab = 'log'; if (parseRoute().name === 'mybar') renderMyBar(); }, 700);
 }
 
@@ -2447,6 +2521,21 @@ function aidanAboutBottle(id){
     (firstCocktail ? `If you take it home, start with a ${firstCocktail} — the recipe's on the bottle page.\n` : '') +
     (avg ? `Members here rate it ${avg.toFixed(1)}/5.` : `No member ratings yet — you could be the first.`)
   ), 400);
+}
+
+/* ---------- theme switching (dark default / light = client palette) ---------- */
+let theme = 'dark';
+try { theme = localStorage.getItem('wh-theme') || 'dark'; } catch (_) {}
+applyTheme(theme);
+function applyTheme(t){
+  document.body.classList.toggle('light', t === 'light');
+  const btn = $('theme-toggle');
+  if (btn) btn.textContent = t === 'light' ? '🌙' : '☀️';
+}
+function toggleTheme(){
+  theme = theme === 'light' ? 'dark' : 'light';
+  try { localStorage.setItem('wh-theme', theme); } catch (_) {}
+  applyTheme(theme);
 }
 
 /* ---------- escape key closes any open overlay ---------- */
