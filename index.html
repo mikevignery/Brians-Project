@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Whiskey Horizon — Whiskey discovery for every level</title>
+<title>Wandering Casks — Whiskey discovery for every level</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Karla:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
 /* ============================================================
-   Whiskey Horizon — "backbar at dusk" · multi-page edition
+   Wandering Casks — "backbar at dusk" · multi-page edition
    Pages: Landing · About · Scotch Guide · Auth · Discover ·
    Bottle Detail · Cocktails · Cocktail Detail · My Bar ·
    Trending · Settings   (hash-routed, one file, no build step)
@@ -27,6 +27,7 @@
   --danger: #d96b4f;
   --ok: #8fae6b;
   --nav-bg: #191009;
+  --icon: #f3e9d2;          /* icon color — cream/white in dark mode */
   --radius: 10px;
 }
 
@@ -45,6 +46,7 @@ body.light {
   --danger: #b34a2e;
   --ok: #4d807d;            /* teal */
   --nav-bg: #fbe5c6;
+  --icon: #4a2f16;          /* icon color — dark brown in light mode */
 }
 body.light .type-tag { color: #4d807d; border-color: rgba(96, 143, 141, 0.55); }
 body.light .badge-beginner { background: #608f8d; color: #fff; }
@@ -135,6 +137,11 @@ a { color: var(--amber); }
   letter-spacing: 0.01em; color: var(--paper); text-decoration: none; white-space: nowrap;
 }
 .wordmark .dot { color: var(--amber); }
+/* renders emoji glyphs in one flat theme color */
+.mono { color: transparent; text-shadow: 0 0 0 var(--icon); }
+.search-wrap { position: relative; flex: 1; min-width: 0; }
+.search-wrap svg { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--icon); opacity: 0.7; pointer-events: none; }
+.search-wrap input { width: 100%; padding-left: 38px; }
 #site-nav .links { display: flex; gap: 4px; flex: 1; }
 #site-nav .links a {
   color: var(--muted); text-decoration: none; font-size: 14.5px; font-weight: 700;
@@ -196,7 +203,7 @@ a { color: var(--amber); }
 .hero-shelf .caption { text-align: center; color: var(--muted); font-size: 12.5px; margin-top: 14px; }
 .value-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; padding: 10px 0 54px; }
 .value-card { background: var(--barrel); border: 1px solid var(--line); border-radius: var(--radius); padding: 24px 20px; }
-.value-card .ico { font-size: 26px; }
+.value-card .ico { color: transparent; text-shadow: 0 0 0 var(--icon); font-size: 26px; }
 .value-card h3 { font-size: 17px; margin: 12px 0 6px; }
 .value-card p { color: var(--muted); font-size: 14px; }
 .featured { padding: 8px 0 60px; }
@@ -433,7 +440,7 @@ a { color: var(--amber); }
 .txt-btn.danger { color: #d98a7f; }
 .picker-remove { border-color: rgba(217,138,127,0.4); color: #d98a7f; }
 .admin-panel { border-color: rgba(121,179,176,0.45); }
-.admin-panel h3::before { content: '🛠 '; }
+.admin-panel h3::before { content: '🛠 '; color: transparent; text-shadow: 0 0 0 var(--icon); }
 .dram-entry p { color: var(--muted); font-size: 14px; margin-top: 6px; }
 .account-list-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--line); }
 .account-list-row .info b { display: block; font-size: 15px; }
@@ -474,7 +481,7 @@ a { color: var(--amber); }
 .selected-dist .ppm { color: var(--amber); font-size: 13px; font-weight: 700; }
 .selected-dist p { font-style: italic; color: var(--muted); font-size: 14px; margin-top: 8px; }
 .region-card { display: flex; gap: 15px; background: var(--barrel); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; margin-bottom: 12px; }
-.region-card .ico { font-size: 24px; }
+.region-card .ico { color: transparent; text-shadow: 0 0 0 var(--icon); font-size: 24px; }
 .region-card b { display: block; font-size: 16px; font-family: 'Fraunces', serif; }
 .region-card p { color: var(--muted); font-size: 14px; margin-top: 2px; }
 .what-is-peat { background: var(--barrel); border: 1px solid var(--line); border-radius: 10px; padding: 18px 20px; margin-bottom: 22px; }
@@ -561,6 +568,7 @@ a { color: var(--amber); }
 .msg.aidan-cta button:hover { filter: brightness(1.06); }
 .fb-row { display: flex; gap: 6px; align-self: flex-start; padding: 0 2px 4px; }
 .fb-row button {
+  color: transparent; text-shadow: 0 0 0 var(--icon);
   background: none; border: 1px solid var(--line); border-radius: 20px;
   font-size: 13px; padding: 4px 10px; cursor: pointer; line-height: 1;
 }
@@ -676,7 +684,7 @@ a { color: var(--amber); }
   .sidebar .side-group:first-of-type { margin-top: 14px; }
   .sidebar .side-group:last-of-type { padding-bottom: 14px; margin-bottom: 0; }
   .side-list button, .side-check { min-height: 42px; }
-  .controls-row input[type=search] { min-width: 0; width: 100%; flex: 1 1 100%; }
+  .controls-row .search-wrap, .controls-row input[type=search] { min-width: 0; width: 100%; flex: 1 1 100%; }
   .result-row { flex-direction: row; }
   .result-row select { flex: 1; max-width: 60%; }
   .grid { grid-template-columns: repeat(2, 1fr); gap: 11px; }
@@ -753,7 +761,7 @@ a { color: var(--amber); }
 <!-- Shown only if the Supabase keys below haven't been filled in yet -->
 <div id="setup-notice" class="hidden">
   <div class="box">
-    <img class="logo-img lg" style="margin:0 auto;" src="https://pqbpmcshkwdngesnlzgi.supabase.co/storage/v1/object/public/Briansimages/horizon%20logo.png" alt="Whiskey Horizon">
+    <img class="logo-img lg" style="margin:0 auto;" src="https://pqbpmcshkwdngesnlzgi.supabase.co/storage/v1/object/public/Briansimages/horizon%20logo.png" alt="Wandering Casks">
     <h2 style="margin:18px 0 10px;">Almost there — one step left</h2>
     <p style="color:var(--muted);">Open <code>index.html</code> in a text editor and paste your Supabase <b>Project URL</b> and <b>anon key</b> into the two lines near the top of the <code>&lt;script&gt;</code> section (they're clearly marked).</p>
   </div>
@@ -761,7 +769,7 @@ a { color: var(--amber); }
 
 <!-- ============================ SITE NAV ============================ -->
 <header id="site-nav" class="hidden">
-  <a class="wordmark" href="#/">Whiskey<span class="dot">Horizon</span></a>
+  <a class="wordmark" href="#/">Wandering<span class="dot">Casks</span></a>
   <button id="nav-burger" onclick="toggleMenu()" aria-label="Menu" aria-expanded="false">☰</button>
   <nav class="links" id="nav-links"></nav>
   <div class="right" id="nav-right"></div>
@@ -773,7 +781,7 @@ a { color: var(--amber); }
 <!-- ============================ SITE FOOTER ============================ -->
 <footer class="site-footer hidden" id="site-footer">
   <div class="wrap">
-    <span>© 2026 Whiskey Horizon</span>
+    <span>© 2026 Wandering Casks</span>
     <span>
       <a href="#/about">About</a> &nbsp;·&nbsp;
       <a href="#/scotch-guide">Scotch Guide</a> &nbsp;·&nbsp;
@@ -1205,7 +1213,7 @@ async function signUp(){
   if (pass.length < 8) return msg(box, 'Password needs to be at least 8 characters.', 'err');
   const age = ageFromDOB(y, m, d);
   if (isNaN(age) || age < 0 || age > 120) return msg(box, 'That birthdate doesn\u2019t look right — please double-check it.', 'err');
-  if (age < 21) return msg(box, 'Sorry — you must be 21 or older to use Whiskey Horizon. See you in a few years.', 'err');
+  if (age < 21) return msg(box, 'Sorry — you must be 21 or older to use Wandering Casks. See you in a few years.', 'err');
   const dob = `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
   msg(box, 'Creating your account\u2026', 'ok');
   const { data, error } = await db.auth.signUp({
@@ -1307,7 +1315,7 @@ function renderLanding(){
       <div>
         <h1>Whiskey discovery<br>for <em>every</em> level</h1>
         <p class="tagline">\u201CI\u2019m looking at a bottle — what can I make?\u201D</p>
-        <p class="sub">Standing in the whiskey aisle holding something unfamiliar? Whiskey Horizon tells you what it tastes like, how hard it is to find, and exactly what to make with it — with Aidan, your no-judgment whiskey guide, along for the ride.</p>
+        <p class="sub">Standing in the whiskey aisle holding something unfamiliar? Wandering Casks tells you what it tastes like, how hard it is to find, and exactly what to make with it — with Aidan, your no-judgment whiskey guide, along for the ride.</p>
         <div class="ctas">
           <a class="btn" href="#/signup">Get Started Free</a>
           <a class="btn ghost" href="#/login">Log In</a>
@@ -1335,7 +1343,7 @@ function renderLanding(){
       <h2>Featured bottles</h2>
       <p class="lede">A taste of what\u2019s waiting on the shelf once you\u2019re in.</p>
       <div class="strip">
-        ${FEATURED_STATIC.map(f => `<div class="f-card"><div class="img">${f[0]}</div><div class="body"><b>${f[1]}</b><small>${f[2]}</small></div></div>`).join('')}
+        ${FEATURED_STATIC.map(f => `<div class="f-card"><div class="img"><span class="mono">${f[0]}</span></div><div class="body"><b>${f[1]}</b><small>${f[2]}</small></div></div>`).join('')}
       </div>
     </section>
   </div>`;
@@ -1348,7 +1356,7 @@ function renderAbout(){
   $('page').innerHTML = `
   <div class="wrap">
     <div class="page-head">
-      <h1>How Whiskey Horizon works</h1>
+      <h1>How Wandering Casks works</h1>
       <p>From \u201Cwhat even is bourbon?\u201D to hunting allocated bottles — the site grows with you.</p>
     </div>
     <div class="about-grid">
@@ -1365,7 +1373,7 @@ function renderAbout(){
     <div class="about-band">
       <div>
         <h2>Built for the store aisle moment</h2>
-        <p>The whole site exists for one moment: you, holding an unfamiliar bottle, wondering if it\u2019s any good and what you\u2019d do with it. Open Whiskey Horizon, look it up, and know in thirty seconds.</p>
+        <p>The whole site exists for one moment: you, holding an unfamiliar bottle, wondering if it\u2019s any good and what you\u2019d do with it. Open Wandering Casks, look it up, and know in thirty seconds.</p>
       </div>
       <div style="text-align:center;">
         <div class="band-ctas">
@@ -1404,7 +1412,7 @@ function renderAuthPage(which, notice){
   const signup = `
     <div class="auth-card">
       <h2>Create your account</h2>
-      <p class="lede">Join Whiskey Horizon — takes a minute. You must be 21+ to enter.</p>
+      <p class="lede">Join Wandering Casks — takes a minute. You must be 21+ to enter.</p>
       <div class="field"><label for="su-name">Full Name *</label><input id="su-name" type="text" autocomplete="name" placeholder="First and last name"></div>
       <div class="field"><label for="su-email">Email Address *</label><input id="su-email" type="email" autocomplete="email" placeholder="you@email.com"></div>
       <div class="field"><label for="su-phone">Phone Number (optional)</label><input id="su-phone" type="tel" autocomplete="tel" placeholder="e.g. +1 555 000 0000"></div>
@@ -1495,13 +1503,13 @@ function renderDiscover(){
           </div>
           <div class="side-group">
             <h4>Good for beginners</h4>
-            <label class="side-check"><input type="checkbox" ${beginnerOnly?'checked':''} onchange="beginnerOnly=this.checked; renderGrid(); closeFiltersOnMobile();"> ⭐ Beginner friendly only</label>
+            <label class="side-check"><input type="checkbox" ${beginnerOnly?'checked':''} onchange="beginnerOnly=this.checked; renderGrid(); closeFiltersOnMobile();"> <span class="mono">⭐</span> Beginner friendly only</label>
           </div>
         </details>
       </aside>
       <section>
         <div class="controls-row">
-          <input id="search" type="search" placeholder="🔍  Search bottles, flavours, distilleries…" value="${esc(searchQ)}" oninput="searchQ=this.value; renderGrid()">
+          <span class="search-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><line x1="16.5" y1="16.5" x2="21" y2="21"></line></svg><input id="search" type="search" placeholder="Search bottles, flavours, distilleries…" value="${esc(searchQ)}" oninput="searchQ=this.value; renderGrid()"></span>
         </div>
         <div id="match-banner" class="hidden">
           <div class="inner">
@@ -1910,7 +1918,7 @@ function renderBottleTab(b, mine){
         return `<div class="cocktail-block"><b>${esc(c.name)}</b><p>${esc(c.recipe)}</p>${lib ? `<a class="open-link" href="#/cocktail/${lib.slug}">Open the full recipe page →</a>` : ''}</div>`;
       }).join('') : '<p class="muted">No recipes stored for this bottle yet — but here\u2019s what pairs with its style:</p>'}
       ${libMatches.length ? `<div class="detail-section" style="margin-top:24px;"><h3>More cocktails for ${esc(b.type)}</h3>
-        ${libMatches.map(c => `<div class="pair-row"><div class="info"><b>${c.emoji} ${esc(c.name)}</b><small>${esc(c.spirit)} · ${c.diff} · ${c.time}</small></div><a class="open-link" href="#/cocktail/${c.slug}">Recipe →</a></div>`).join('')}
+        ${libMatches.map(c => `<div class="pair-row"><div class="info"><b><span class="mono">${c.emoji}</span> ${esc(c.name)}</b><small>${esc(c.spirit)} · ${c.diff} · ${c.time}</small></div><a class="open-link" href="#/cocktail/${c.slug}">Recipe →</a></div>`).join('')}
       </div>` : ''}`;
   } else {
     body.innerHTML = `
@@ -2027,7 +2035,7 @@ function renderCocktails(){
       </aside>
       <section>
         <div class="controls-row">
-          <input type="search" placeholder="🔍  Search cocktails by name, ingredient, or flavour…" value="${esc(cSearch)}" oninput="cSearch=this.value; renderCocktailGrid();">
+          <span class="search-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><line x1="16.5" y1="16.5" x2="21" y2="21"></line></svg><input type="search" placeholder="Search cocktails by name, ingredient, or flavour…" value="${esc(cSearch)}" oninput="cSearch=this.value; renderCocktailGrid();"></span>
         </div>
         <div class="grid cocktails" id="cocktail-grid" style="margin-top:14px;"></div>
       </section>
@@ -2054,7 +2062,7 @@ function renderCocktailGrid(){
   );
   $('cocktail-grid').innerHTML = list.length ? list.map(c => `
     <button class="card" onclick="go('/cocktail/${c.slug}')">
-      <div class="img" style="font-size:44px;">${c.emoji}</div>
+      <div class="img" style="font-size:44px;"><span class="mono">${c.emoji}</span></div>
       <div class="body">
         <span class="type-tag">${esc(c.spirit)}</span>
         <h3>${esc(c.name)}</h3>
@@ -2078,7 +2086,7 @@ function renderCocktailDetail(slug){
     <div class="crumb"><a href="#/cocktails">Cocktails</a> &nbsp;›&nbsp; <b>${esc(c.name)}</b></div>
     <div class="cd-layout">
       <div class="cd-main">
-        <h1>${c.emoji} ${esc(c.name)}</h1>
+        <h1><span class="mono">${c.emoji}</span> ${esc(c.name)}</h1>
         <p class="cd-sub">${esc(c.spirit)} · ${c.diff} · ${c.time} · ${c.abv} ABV</p>
         <p style="font-size:16px;">${esc(c.tagline)}</p>
 
@@ -2367,7 +2375,7 @@ function renderTrending(){
     <div class="trend-layout">
       <div>
         <div class="trend-panel">
-          <h3>⭐ Top rated bottles</h3>
+          <h3><span class="mono">⭐</span> Top rated bottles</h3>
           ${top.length ? top.map((x,i) => `<div class="trend-row"><span class="rank">${i+1}</span>
             <div class="info"><b>${esc(x.b.name)}</b><small>${esc(x.b.type)} · ${x.n} rating${x.n===1?'':'s'}</small></div>
             <span class="stars">${starString(x.avg)} ${x.avg.toFixed(1)}</span>
@@ -2384,7 +2392,7 @@ function renderTrending(){
         </div>
       </div>
       <div class="trend-panel">
-        <h3>💬 Latest reviews</h3>
+        <h3><span class="mono">💬</span> Latest reviews</h3>
         ${recent.length ? recent.slice(0, 12).map(r => `
           <div class="review">
             <div class="head">
@@ -2418,7 +2426,7 @@ function renderScotchGuide(){
       </div>
       <div>
         <div class="what-is-peat">
-          <h3>🔥 What is Peat?</h3>
+          <h3><span class="mono">🔥</span> What is Peat?</h3>
           <p>Peat is ancient compressed vegetation burned as fuel during whisky production. The smoke infuses the malted barley, carrying into the final spirit as the \u201Csmoky\u201D flavour. It\u2019s measured in PPM (phenol parts per million) — zero means no smoke at all; 50+ means a beach bonfire in a glass.</p>
         </div>
         <h3 style="font-size:18px; margin:0 0 12px;">Scottish Whisky Regions</h3>
@@ -2462,7 +2470,7 @@ function selectDist(id){
   document.querySelectorAll('#scotland-map .dist').forEach(g => g.classList.toggle('sel', g.id === 'dist-' + id));
   const inShelf = bottles.find(b => b.company.toLowerCase().includes(d.name.toLowerCase().replace('the ','')) || b.name.toLowerCase().includes(d.name.toLowerCase().replace('the ','')));
   $('dist-card').innerHTML = `
-    <div class="head"><b>🔥 ${esc(d.name)}</b><span class="ppm">${d.ppm} PPM · Peat: ${peatLabel(d.ppm)}</span></div>
+    <div class="head"><b><span class="mono">🔥</span> ${esc(d.name)}</b><span class="ppm">${d.ppm} PPM · Peat: ${peatLabel(d.ppm)}</span></div>
     <div class="muted" style="font-size:13px; margin-top:2px;">${esc(d.region)} ${d.region==='Islands'?'':'region'}</div>
     <p>\u201C${esc(d.verdict)}\u201D</p>
     ${inShelf && currentUser ? `<a class="open-link" href="#/bottle/${inShelf.id}" style="margin-top:8px; display:inline-block;">View ${esc(inShelf.name)} on the shelf →</a>` : ''}`;
@@ -2513,7 +2521,7 @@ function renderSettings(){
       <div class="trend-panel" style="margin-bottom:${isAdminUser ? '22px' : '60px'};">
         <h3>Notifications</h3>
         <p class="muted" style="font-size:14.5px;">Email notifications (new bottles, replies to your reviews) are coming in a future update — nothing to configure yet.</p>
-        <button class="btn ghost" style="margin-top:14px;" onclick="signOut()">Sign out of Whiskey Horizon</button>
+        <button class="btn ghost" style="margin-top:14px;" onclick="signOut()">Sign out of Wandering Casks</button>
       </div>
 
       ${isAdminUser ? `
