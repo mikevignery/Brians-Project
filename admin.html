@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Whiskey Horizon — Owner Dashboard</title>
+<title>Wandering Casks — Owner Dashboard</title>
 <meta name="robots" content="noindex, nofollow">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Karla:wght@400;600;700&display=swap" rel="stylesheet">
@@ -104,7 +104,7 @@ footer { padding: 30px 24px 50px; color: var(--muted); font-size: 12.5px; text-a
 <!-- ============ LOGIN ============ -->
 <div id="login-view" class="login-shell">
   <div class="login-card">
-    <h1>Whiskey<span style="color:var(--amber)">Horizon</span></h1>
+    <h1>Wandering<span style="color:var(--amber)">Casks</span></h1>
     <p class="lede">Owner Dashboard — sign in with your regular site account.</p>
     <div class="field"><label for="li-email">Email</label><input id="li-email" type="email" autocomplete="email"></div>
     <div class="field"><label for="li-pass">Password</label><input id="li-pass" type="password" autocomplete="current-password" onkeydown="if(event.key==='Enter') signIn()"></div>
@@ -125,7 +125,7 @@ footer { padding: 30px 24px 50px; color: var(--muted); font-size: 12.5px; text-a
 <!-- ============ DASHBOARD ============ -->
 <div id="dash-view" class="hidden">
   <header>
-    <span class="wordmark">Whiskey<span>Horizon</span></span>
+    <span class="wordmark">Wandering<span>Casks</span></span>
     <span class="dash-tag">Owner Dashboard</span>
     <div class="right">
       <span class="who" id="who"></span>
@@ -297,7 +297,7 @@ function renderShelf(){
   const list = shelf().filter(b => !q || b.name.toLowerCase().includes(q) || (b.company || '').toLowerCase().includes(q));
   $('panel').innerHTML = `
     <div class="controls">
-      <input type="search" placeholder="🔍  Search the shelf…" value="${esc(shelfSearch)}" oninput="shelfSearch=this.value; renderShelf();">
+      <input type="search" placeholder="Search the shelf…" value="${esc(shelfSearch)}" oninput="shelfSearch=this.value; renderShelf();">
       <button class="btn ghost" onclick="addBottle()">+ Add a bottle directly</button>
     </div>` +
     (list.length ? '' : '<div class="empty">Nothing matches that search.</div>') +
