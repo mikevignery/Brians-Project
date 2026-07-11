@@ -88,6 +88,10 @@ header .who { color: var(--muted); font-size: 13px; }
 /* faq */
 .faq-row { background: var(--barrel); border: 1px solid var(--line); border-radius: 12px; padding: 18px; margin-bottom: 14px; }
 .faq-row.inactive { opacity: 0.6; }
+.img-row { display: flex; gap: 10px; align-items: center; }
+.img-row input { flex: 1; }
+.img-row img.thumb { width: 46px; height: 46px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); flex: none; }
+.up-btn { white-space: nowrap; cursor: pointer; flex: none; }
 .check-line { display: flex; align-items: center; gap: 8px; font-size: 14px; margin-bottom: 12px; }
 .check-line input { width: auto; }
 
@@ -253,7 +257,7 @@ function bottleForm(b){
     <div class="field"><label>Availability</label>
       <select id="f${b.id}-rarity">${[1,2,3,4,5].map(n => `<option value="${n}" ${n === (b.rarity || 1) ? 'selected' : ''}>${n} — ${RARITY[n]}</option>`).join('')}</select></div>
   </div>
-  <div class="field"><label>Image URL (optional)</label><input id="f${b.id}-image" value="${esc(b.image_url || '')}"></div>
+  ${imageField(`f${b.id}-image`, 'bottles', b.id, b.image_url)}
   <div class="field"><label>Tasting notes</label><input id="f${b.id}-notes" value="${esc(b.tasting_notes || '')}"></div>
   <div class="field"><label>Description / the story</label><textarea id="f${b.id}-desc" rows="3">${esc(b.description || '')}</textarea></div>
   <div class="field"><label>Cocktails — one per line: Name :: recipe</label>
@@ -403,6 +407,41 @@ function renderFaq(){
       <div id="qm${r.id}" class="form-msg"></div>
     </div>`).join('')}`;
 }
+/* ---------- image uploads (bottles + cocktails) ---------- */
+async function uploadImage(folder, recordId, fileInput, targetFieldId){
+  const file = fileInput.files && fileInput.files[0];
+  if (!file) return;
+  if (!file.type.startsWith('image/')) return alert('Please choose an image file (JPG, PNG, or WebP).');
+  if (file.size > 5 * 1024 * 1024) return alert('That image is over 5 MB — please resize it and try again.');
+  const btn = fileInput.closest('.up-btn');
+  const oldLabel = btn ? btn.firstChild.textContent : '';
+  if (btn) btn.firstChild.textContent = 'Uploading…';
+  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
+  const path = `${folder}/${recordId}-${Date.now()}.${ext}`;
+  const { error } = await db.storage.from('images').upload(path, file, { upsert: true, cacheControl: '3600', contentType: file.type });
+  if (btn) btn.firstChild.textContent = oldLabel;
+  fileInput.value = '';
+  if (error) return alert(error.message + '\n\n(Have you run images-upgrade.sql?)');
+  const { data } = db.storage.from('images').getPublicUrl(path);
+  $(targetFieldId).value = data.publicUrl;
+  const row = $(targetFieldId).closest('.img-row');
+  if (row) {
+    let t = row.querySelector('img.thumb');
+    if (!t) { t = document.createElement('img'); t.className = 'thumb'; row.prepend(t); }
+    t.src = data.publicUrl;
+  }
+}
+function imageField(fieldId, folder, recordId, current){
+  return `<div class="field"><label>Photo</label>
+    <div class="img-row">
+      ${current ? `<img class="thumb" src="${esc(current)}">` : ''}
+      <input id="${fieldId}" value="${esc(current || '')}" placeholder="https://… or Upload →">
+      <label class="btn ghost sm up-btn">Upload<input type="file" accept="image/*" hidden onchange="uploadImage('${folder}', ${recordId}, this, '${fieldId}')"></label>
+    </div>
+    <div class="hint">JPG / PNG / WebP up to 5 MB. Uploading fills the URL — remember to hit Save to attach it to the record.</div>
+  </div>`;
+}
+
 /* ---------- cocktail library ---------- */
 const DIFFS = ['Easy','Medium','Hard'];
 function slugify(s){ return String(s).toLowerCase().trim().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,''); }
@@ -425,6 +464,7 @@ function cocktailForm(c){
     <div class="field"><label>ABV (e.g. "~32%")</label><input id="c${c.id}-abv" value="${esc(c.abv || '')}"></div>
   </div>
   <div class="field"><label>Tagline (one sentence on the card)</label><input id="c${c.id}-tagline" value="${esc(c.tagline || '')}"></div>
+  ${imageField(`c${c.id}-image`, 'cocktails', c.id, c.image_url)}
   <div class="field"><label>Ingredients — one per line: Ingredient :: Amount</label>
     <textarea id="c${c.id}-ing" rows="5" placeholder="Bourbon or rye :: 2 oz">${esc(ing)}</textarea></div>
   <div class="field"><label>Method — one step per line, in order</label>
@@ -443,6 +483,7 @@ function collectCocktail(c){
     time: v('time').trim() || '5 min',
     abv: v('abv').trim(),
     tagline: v('tagline').trim(),
+    image_url: v('image').trim() || null,
     ingredients: v('ing').split('\n').map(l => l.trim()).filter(Boolean).map(l => {
       const i = l.indexOf('::');
       return i === -1 ? [l, ''] : [l.slice(0, i).trim(), l.slice(i + 2).trim()];
