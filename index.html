@@ -552,6 +552,13 @@ a { color: var(--amber); }
 .msg { max-width: 88%; padding: 10px 13px; border-radius: 12px; font-size: 14px; white-space: pre-wrap; }
 .msg.aidan { background: var(--barrel-2); border: 1px solid var(--line); align-self: flex-start; border-bottom-left-radius: 4px; }
 .msg.user { background: rgba(227,155,45,0.16); border: 1px solid rgba(227,155,45,0.35); align-self: flex-end; border-bottom-right-radius: 4px; }
+.msg.aidan-cta { background: none; border: none; padding: 2px 0 6px; }
+.msg.aidan-cta button {
+  background: linear-gradient(120deg, var(--amber), var(--amber-deep));
+  color: #241505; border: none; border-radius: 20px; padding: 10px 16px;
+  font-weight: 700; font-size: 13.5px; font-family: inherit; cursor: pointer;
+}
+.msg.aidan-cta button:hover { filter: brightness(1.06); }
 .aidan-chips { display: flex; flex-wrap: wrap; gap: 7px; padding: 0 15px 10px; }
 .aidan-chips button { background: none; border: 1px solid var(--line); color: var(--muted); border-radius: 20px; padding: 5px 11px; font-size: 12.5px; }
 .aidan-chips button:hover { color: var(--amber); border-color: var(--amber); }
@@ -2111,8 +2118,15 @@ function renderCocktailDetail(slug){
 }
 function cdSay(text){ const d = document.createElement('div'); d.className = 'msg aidan'; d.textContent = text; $('cd-log').appendChild(d); $('cd-log').scrollTop = $('cd-log').scrollHeight; }
 function cdUser(text){ const d = document.createElement('div'); d.className = 'msg user'; d.textContent = text; $('cd-log').appendChild(d); $('cd-log').scrollTop = $('cd-log').scrollHeight; }
-function cdAsk(t){ cdUser(t); setTimeout(() => cdSay(aidanBrain(t, currentCocktail())), 350); }
-function cdSend(){ const t = $('cd-text').value.trim(); if (!t) return; $('cd-text').value = ''; cdUser(t); setTimeout(() => cdSay(aidanBrain(t, currentCocktail())), 350); }
+function cdReply(t){
+  const reply = aidanBrain(t, currentCocktail());
+  setTimeout(() => {
+    cdSay(reply);
+    if (reply === AIDAN_FALLBACK) aidanOfferQuiz('cd-log', false);
+  }, 350);
+}
+function cdAsk(t){ cdUser(t); cdReply(t); }
+function cdSend(){ const t = $('cd-text').value.trim(); if (!t) return; $('cd-text').value = ''; cdUser(t); cdReply(t); }
 function currentCocktail(){ const r = parseRoute(); return r.name === 'cocktail' ? COCKTAILS.find(c => c.slug === r.arg) : null; }
 
 /* ============================================================
@@ -2546,15 +2560,34 @@ function aidanGreetOnce(){
 }
 function aidanSay(text){ const d = document.createElement('div'); d.className = 'msg aidan'; d.textContent = text; $('aidan-log').appendChild(d); $('aidan-log').scrollTop = $('aidan-log').scrollHeight; }
 function aidanUser(text){ const d = document.createElement('div'); d.className = 'msg user'; d.textContent = text; $('aidan-log').appendChild(d); $('aidan-log').scrollTop = $('aidan-log').scrollHeight; }
-function aidanQuick(text){ aidanUser(text); setTimeout(() => aidanSay(aidanBrain(text)), 350); }
+function aidanReply(text){
+  const reply = aidanBrain(text);
+  setTimeout(() => {
+    aidanSay(reply);
+    if (reply === AIDAN_FALLBACK) aidanOfferQuiz('aidan-log', true);
+  }, 350);
+}
+function aidanQuick(text){ aidanUser(text); aidanReply(text); }
 function aidanSend(){
   const t = $('aidan-text').value.trim();
   if (!t) return;
   $('aidan-text').value = '';
   aidanUser(t);
-  setTimeout(() => aidanSay(aidanBrain(t)), 350);
+  aidanReply(t);
 }
 function cheapest(list){ return list.slice().sort((a,b) => (a.price||999)-(b.price||999)); }
+
+/* After a fallback reply, offer the taste quiz so nobody hits a dead end */
+function aidanOfferQuiz(logId, closesPanel){
+  const d = document.createElement('div');
+  d.className = 'msg aidan aidan-cta';
+  const btn = document.createElement('button');
+  btn.textContent = '🥃 Help me choose a bottle';
+  btn.onclick = () => { if (closesPanel) $('aidan-panel').classList.add('hidden'); startQuiz(); };
+  d.appendChild(btn);
+  $(logId).appendChild(d);
+  $(logId).scrollTop = $(logId).scrollHeight;
+}
 
 function aidanBrain(input, cocktail){
   const q = input.toLowerCase();
@@ -2624,8 +2657,9 @@ function aidanBrain(input, cocktail){
   }
   if (has('thanks', 'thank you', 'cheers')) return "Cheers! 🥃 I'm here whenever a bottle stumps you.";
   logUnanswered(input);
-  return "Great question. I'm sharpest on: picking a first bottle, smooth vs smoky, bourbon/scotch/rye differences, cocktail matches, gifts, and budget picks — try one of those, or open any bottle and hit 'Ask Aidan about this bottle' and I'll break it down for you.";
+  return AIDAN_FALLBACK;
 }
+const AIDAN_FALLBACK = "Great question — that one's outside what I know today (I've flagged it for the owners so I can learn it). In the meantime, I'm sharpest on: picking a first bottle, smooth vs smoky, bourbon/scotch/rye differences, cocktail matches, gifts, and budget picks. Or let me narrow the whole shelf down to YOUR taste:";
 
 /* Quietly record questions Aidan couldn't answer, so the owners can
    teach him via the dashboard. Deduped per session; failures ignored
