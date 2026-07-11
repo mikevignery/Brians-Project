@@ -1435,9 +1435,12 @@ function filterSummary(){
 function refreshFilterBar(){
   const box = $('filter-box');
   if (!box) return;
+  const onCocktails = parseRoute().name === 'cocktails';
+  const n = onCocktails ? cFilterCount() : filterCount();
+  const label = onCocktails ? cFilterSummary() : filterSummary();
   const t = box.querySelector('.f-title'), a = box.querySelector('.f-active');
-  if (t) t.innerHTML = '☰ Filters' + (filterCount() ? ` <span class="f-count">${filterCount()}</span>` : '');
-  if (a) a.textContent = filterSummary();
+  if (t) t.innerHTML = '☰ Filters' + (n ? ` <span class="f-count">${n}</span>` : '');
+  if (a) a.textContent = label;
 }
 function closeFiltersOnMobile(){
   const box = $('filter-box');
@@ -1886,15 +1889,19 @@ function renderCocktails(){
     <div class="page-head"><h1>Cocktail Recipes</h1><p>Every recipe links back to bottles on the shelf that pair well with it.</p></div>
     <div class="discover-layout">
       <aside class="sidebar">
-        <details open>
-          <summary style="font-weight:700; cursor:pointer; color:var(--amber);">Filter by</summary>
+        <details id="filter-box" ${isDesktop() ? 'open' : ''}>
+          <summary>
+            <span class="f-title">☰ Filters${cFilterCount() ? ` <span class="f-count">${cFilterCount()}</span>` : ''}</span>
+            <span class="f-active">${esc(cFilterSummary())}</span>
+            <span class="f-chev">▾</span>
+          </summary>
           <div class="side-group">
             <h4>Spirit Type</h4>
-            <div class="side-list">${spirits.map(s => `<button class="${s===cSpirit?'active':''}" onclick="cSpirit='${s}'; renderCocktails();">${s}</button>`).join('')}</div>
+            <div class="side-list">${spirits.map(s => `<button class="${s===cSpirit?'active':''}" onclick="setCSpirit('${s}')">${s}</button>`).join('')}</div>
           </div>
           <div class="side-group">
             <h4>Difficulty</h4>
-            <div class="side-list">${diffs.map(d => `<button class="${d===cDiff?'active':''}" onclick="cDiff='${d}'; renderCocktails();">${d}</button>`).join('')}</div>
+            <div class="side-list">${diffs.map(d => `<button class="${d===cDiff?'active':''}" onclick="setCDiff('${d}')">${d}</button>`).join('')}</div>
           </div>
         </details>
       </aside>
@@ -1908,6 +1915,15 @@ function renderCocktails(){
   </div>`;
   renderCocktailGrid();
 }
+function cFilterCount(){ return (cSpirit !== 'All' ? 1 : 0) + (cDiff !== 'All' ? 1 : 0); }
+function cFilterSummary(){
+  const parts = [];
+  if (cSpirit !== 'All') parts.push(cSpirit);
+  if (cDiff !== 'All') parts.push(cDiff);
+  return parts.length ? parts.join(' · ') : 'All cocktails showing';
+}
+function setCSpirit(v){ cSpirit = v; renderCocktails(); closeFiltersOnMobile(); }
+function setCDiff(v){ cDiff = v; renderCocktails(); closeFiltersOnMobile(); }
 function renderCocktailGrid(){
   const q = cSearch.trim().toLowerCase();
   const list = COCKTAILS.filter(c =>
