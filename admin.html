@@ -139,6 +139,7 @@ footer { padding: 30px 24px 50px; color: var(--muted); font-size: 12.5px; text-a
       <button id="tab-pending" class="active" onclick="setTab('pending')">Pending Review <span class="count" id="count-pending">0</span></button>
       <button id="tab-shelf" onclick="setTab('shelf')">The Shelf <span class="count" id="count-shelf">0</span></button>
       <button id="tab-faq" onclick="setTab('faq')">Aidan Q&amp;A <span class="count" id="count-faq">0</span></button>
+      <button id="tab-unanswered" onclick="setTab('unanswered')">Unanswered <span class="count" id="count-unanswered">0</span></button>
     </div>
     <div id="panel"></div>
   </div>
@@ -151,7 +152,7 @@ const SUPABASE_URL = "https://pqbpmcshkwdngesnlzgi.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxYnBtY3Noa3dkbmdlc25semdpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM3MDE1MTQsImV4cCI6MjA5OTI3NzUxNH0.xlJpUcADnfpMsKqiNtfP84Fp2xm9YvyB4Lo9J_V3j7I";
 
 let db, currentUser = null, tab = 'pending';
-let allBottles = [], faqRows = [], namesById = {};
+let allBottles = [], faqRows = [], namesById = {}, unanswered = [], faqDraft = null;
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function msg(el, text, cls){ el.textContent = text; el.className = 'form-msg ' + cls; }
@@ -188,14 +189,16 @@ async function enter(){
 
 /* ---------- data ---------- */
 async function loadAll(){
-  const [{ data: b, error: be }, { data: f }, { data: p }] = await Promise.all([
+  const [{ data: b, error: be }, { data: f }, { data: p }, unRes] = await Promise.all([
     db.from('bottles').select('*').order('id', { ascending: false }),
     db.from('aidan_faq').select('*').order('id'),
-    db.from('profiles').select('id, full_name')
+    db.from('profiles').select('id, full_name'),
+    db.from('aidan_unanswered').select('*').order('created_at', { ascending: false })
   ]);
   if (be) alert('Could not load bottles: ' + be.message);
   allBottles = b || [];
   faqRows = f || [];
+  unanswered = (unRes && unRes.data) || [];
   namesById = {};
   (p || []).forEach(x => namesById[x.id] = x.full_name || 'Member');
   renderCounts(); render();
@@ -206,9 +209,10 @@ function renderCounts(){
   $('count-pending').textContent = pending().length;
   $('count-shelf').textContent = shelf().length;
   $('count-faq').textContent = faqRows.length;
+  $('count-unanswered').textContent = unanswered.length;
 }
-function setTab(t){ tab = t; ['pending','shelf','faq'].forEach(x => $('tab-'+x).classList.toggle('active', x === t)); render(); }
-function render(){ if (tab === 'pending') renderPending(); else if (tab === 'shelf') renderShelf(); else renderFaq(); }
+function setTab(t){ tab = t; ['pending','shelf','faq','unanswered'].forEach(x => $('tab-'+x).classList.toggle('active', x === t)); render(); }
+function render(){ if (tab === 'pending') renderPending(); else if (tab === 'shelf') renderShelf(); else if (tab === 'unanswered') renderUnanswered(); else renderFaq(); }
 
 /* ---------- cocktails <-> friendly lines ---------- */
 function cocktailsToLines(c){
@@ -347,12 +351,24 @@ async function deleteBottle(id){
 }
 
 /* ---------- aidan q&a ---------- */
+function keywordGuess(q){
+  const stop = new Set(['what','when','where','which','about','does','have','this','that','with','from','your','you','the','and','for','are','can','how','why','who','will','would','should','could','there','their','them']);
+  return String(q).toLowerCase().replace(/[^a-z0-9\s]/g,' ').split(/\s+/)
+    .filter(w => w.length > 3 && !stop.has(w)).slice(0, 3).join(', ');
+}
 function renderFaq(){
   $('panel').innerHTML = `
+    ${faqDraft ? `
+    <div class="rev-card" style="border-color: rgba(121,179,176,0.5);">
+      <div class="rev-head"><h3 style="font-size:15px;">Answering a member\u2019s question</h3></div>
+      <p style="font-size:14.5px;">\u201C${esc(faqDraft.question)}\u201D</p>
+      <p class="hint">Adding the answer below will also remove this from the Unanswered queue.
+        <button class="btn ghost sm" style="margin-left:8px;" onclick="faqDraft=null; renderFaq();">Cancel</button></p>
+    </div>` : ''}
     <div class="rev-card" style="border-style:dashed;">
       <div class="rev-head"><h3>Add a new answer</h3></div>
       <div class="field"><label>Trigger keywords — comma separated, lowercase</label>
-        <input id="new-keys" placeholder="shipping, do you ship, delivery">
+        <input id="new-keys" placeholder="shipping, do you ship, delivery" value="${faqDraft ? esc(keywordGuess(faqDraft.question)) : ''}">
         <div class="hint">If a member\u2019s question to Aidan contains ANY of these words/phrases, he replies with your answer below. These run before his built-in answers, so you can override those too.</div></div>
       <div class="field"><label>Aidan\u2019s answer</label><textarea id="new-answer" rows="3" placeholder="We\u2019re a guide, not a store — no shipping here! But every bottle page shows how hard it is to find near you."></textarea></div>
       <button class="btn" onclick="addFaq()">Add answer</button>
@@ -372,6 +388,41 @@ function renderFaq(){
       <div id="qm${r.id}" class="form-msg"></div>
     </div>`).join('')}`;
 }
+/* ---------- unanswered questions ---------- */
+function renderUnanswered(){
+  $('panel').innerHTML =
+    (unanswered.length ? `
+    <div class="controls" style="justify-content:space-between; align-items:center;">
+      <p class="muted" style="font-size:13.5px;">Questions where Aidan had to give his generic fallback. Turn the good ones into answers — the rest can be dismissed.</p>
+      <button class="btn danger sm" onclick="clearUnanswered()">Dismiss all</button>
+    </div>` : '<div class="empty">Nothing here — Aidan has had an answer for everything lately. 🥃</div>') +
+    unanswered.map(u => `
+    <div class="shelf-row">
+      <div class="info">
+        <b>\u201C${esc(u.question)}\u201D</b>
+        <small>${esc(namesById[u.user_id] || 'a member')} · ${new Date(u.created_at).toLocaleDateString()}</small>
+      </div>
+      <button class="btn sm" onclick="draftAnswer(${u.id})">Write an answer</button>
+      <button class="btn ghost sm" onclick="dismissUnanswered(${u.id})">Dismiss</button>
+    </div>`).join('');
+}
+function draftAnswer(id){
+  faqDraft = unanswered.find(u => u.id === id) || null;
+  setTab('faq');
+}
+async function dismissUnanswered(id){
+  const { error } = await db.from('aidan_unanswered').delete().eq('id', id);
+  if (error) return alert(error.message);
+  unanswered = unanswered.filter(u => u.id !== id);
+  renderCounts(); renderUnanswered();
+}
+async function clearUnanswered(){
+  if (!confirm('Dismiss all ' + unanswered.length + ' unanswered questions?')) return;
+  for (const u of unanswered) await db.from('aidan_unanswered').delete().eq('id', u.id);
+  unanswered = [];
+  renderCounts(); renderUnanswered();
+}
+
 async function addFaq(){
   const box = $('new-faq-msg');
   const keywords = $('new-keys').value.trim(), answer = $('new-answer').value.trim();
@@ -379,6 +430,11 @@ async function addFaq(){
   const { data, error } = await db.from('aidan_faq').insert({ keywords, answer, active: true }).select().single();
   if (error) return msg(box, error.message, 'err');
   faqRows.push(data);
+  if (faqDraft) {
+    await db.from('aidan_unanswered').delete().eq('id', faqDraft.id);
+    unanswered = unanswered.filter(u => u.id !== faqDraft.id);
+    faqDraft = null;
+  }
   renderCounts(); renderFaq();
 }
 async function saveFaq(id){
