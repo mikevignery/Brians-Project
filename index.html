@@ -491,15 +491,8 @@ a { color: var(--amber); }
 /* ============================================================
    AIDAN (global floating panel)
    ============================================================ */
-#aidan-fab {
-  position: fixed; right: 24px; bottom: 24px; z-index: 80;
-  width: 56px; height: 56px; border-radius: 50%;
-  background: linear-gradient(140deg, var(--amber), var(--copper));
-  border: none; color: #241505; font-family: 'Fraunces', serif; font-weight: 700; font-size: 20px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-}
 #aidan-panel {
-  position: fixed; right: 24px; bottom: 92px; z-index: 80;
+  position: fixed; right: 24px; bottom: 24px; z-index: 80;
   width: min(380px, calc(100vw - 40px)); height: min(540px, 70vh); height: min(540px, 70dvh);
   background: var(--barrel); border: 1px solid var(--line); border-radius: 14px;
   display: flex; flex-direction: column; overflow: hidden;
@@ -678,10 +671,9 @@ a { color: var(--amber); }
   .rate-row button { font-size: 36px; }        /* fatter tap targets for stars */
 
   /* ---- Aidan: full-width sheet on phones ---- */
-  #aidan-fab { right: 16px; bottom: max(16px, env(safe-area-inset-bottom)); }
   #aidan-panel {
     right: 10px; left: 10px; width: auto;
-    bottom: calc(max(16px, env(safe-area-inset-bottom)) + 66px);
+    bottom: max(16px, env(safe-area-inset-bottom));
     height: min(520px, 68dvh);
   }
   .aidan-chips button { min-height: 34px; }
@@ -789,7 +781,6 @@ a { color: var(--amber); }
 </div>
 
 <!-- ============================ AIDAN (global) ============================ -->
-<button id="aidan-fab" class="hidden" title="Ask Aidan" onclick="toggleAidan()">A.</button>
 <div id="aidan-panel" class="hidden">
   <div class="aidan-head">
     <div class="avatar">A</div>
@@ -1072,7 +1063,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   const isRecovery = window.location.hash.includes('type=recovery');
   const { data: { session } } = await db.auth.getSession();
   if (isRecovery) { currentUser = null; renderNav(); renderAuthPage('reset'); }
-  else { currentUser = session ? session.user : null; if(currentUser){ $('aidan-fab').classList.remove('hidden'); } await route(); if (currentUser) initTasteQuiz(); }
+  else { currentUser = session ? session.user : null; await route(); if (currentUser) initTasteQuiz(); }
 
   db.auth.onAuthStateChange(async (evt, sess) => {
     if (evt === 'PASSWORD_RECOVERY') { renderAuthPage('reset'); return; }
@@ -1080,12 +1071,11 @@ window.addEventListener('DOMContentLoaded', async () => {
     currentUser = sess ? sess.user : null;
     if (currentUser && !wasIn) {
       dataLoaded = false;
-      $('aidan-fab').classList.remove('hidden');
       aidanGreetOnce();
       go('/discover'); await route();
       initTasteQuiz();
     } else if (!currentUser && wasIn) {
-      dataLoaded = false; $('aidan-fab').classList.add('hidden'); $('aidan-panel').classList.add('hidden');
+      dataLoaded = false; $('aidan-panel').classList.add('hidden');
       go('/'); route();
     }
   });
