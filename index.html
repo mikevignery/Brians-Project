@@ -432,6 +432,8 @@ a { color: var(--amber); }
 .dram-acts .txt-btn { font-size: 13px; }
 .txt-btn.danger { color: #d98a7f; }
 .picker-remove { border-color: rgba(217,138,127,0.4); color: #d98a7f; }
+.admin-panel { border-color: rgba(121,179,176,0.45); }
+.admin-panel h3::before { content: '🛠 '; }
 .dram-entry p { color: var(--muted); font-size: 14px; margin-top: 6px; }
 .account-list-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--line); }
 .account-list-row .info b { display: block; font-size: 15px; }
@@ -1233,8 +1235,13 @@ async function submitNewPassword(){
 /* ============================================================
    DATA
    ============================================================ */
-let aidanFaq = [];
+let aidanFaq = [], isAdminUser = false;
 async function loadEverything(){
+  // does this account have Owner Dashboard access? (false if admin-upgrade.sql not run)
+  try {
+    const { data: adm, error: ae } = await db.rpc('is_admin');
+    isAdminUser = !ae && adm === true;
+  } catch (_) { isAdminUser = false; }
   const [{ data: b, error: be }, { data: r }, { data: p }] = await Promise.all([
     db.from('bottles').select('*').order('name'),
     db.from('ratings').select('*'),
@@ -2481,11 +2488,18 @@ function renderSettings(){
         <div id="np-msg" class="form-msg"></div>
       </div>
 
-      <div class="trend-panel" style="margin-bottom:60px;">
+      <div class="trend-panel" style="margin-bottom:${isAdminUser ? '22px' : '60px'};">
         <h3>Notifications</h3>
         <p class="muted" style="font-size:14.5px;">Email notifications (new bottles, replies to your reviews) are coming in a future update — nothing to configure yet.</p>
         <button class="btn ghost" style="margin-top:14px;" onclick="signOut()">Sign out of Whiskey Horizon</button>
       </div>
+
+      ${isAdminUser ? `
+      <div class="trend-panel admin-panel" style="margin-bottom:60px;">
+        <h3>Admin</h3>
+        <p class="muted" style="font-size:14.5px;">This account has owner access — review bottle suggestions, manage the shelf, and teach Aidan new answers.</p>
+        <a class="btn" style="margin-top:14px; display:inline-block;" href="admin.html">Go to dashboard →</a>
+      </div>` : ''}
     </div>`;
   });
 }
