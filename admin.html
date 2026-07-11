@@ -92,6 +92,10 @@ header .who { color: var(--muted); font-size: 13px; }
 .img-row input { flex: 1; }
 .img-row img.thumb { width: 46px; height: 46px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); flex: none; }
 .up-btn { white-space: nowrap; cursor: pointer; flex: none; }
+.link-chips { display: flex; flex-wrap: wrap; gap: 8px; min-height: 30px; align-items: center; }
+.link-chip { display: inline-flex; align-items: center; gap: 7px; background: var(--barrel-2); border: 1px solid var(--line); border-radius: 20px; padding: 5px 6px 5px 12px; font-size: 13px; }
+.link-chip button { background: none; border: none; color: var(--muted); font-size: 15px; line-height: 1; padding: 2px 6px; }
+.link-chip button:hover { color: var(--danger); }
 .check-line { display: flex; align-items: center; gap: 8px; font-size: 14px; margin-bottom: 12px; }
 .check-line input { width: auto; }
 
@@ -212,6 +216,7 @@ async function loadAll(){
   feedback = (fbRes && fbRes.data) || [];
   cocktailsOk = !(cxRes && cxRes.error);
   cocktailsRows = (cxRes && cxRes.data) || [];
+  initFaqLinks();
   namesById = {};
   (p || []).forEach(x => namesById[x.id] = x.full_name || 'Member');
   renderCounts(); render();
@@ -370,13 +375,73 @@ async function deleteBottle(id){
 }
 
 /* ---------- aidan q&a ---------- */
+/* linked bottles/cocktails per Q&A row (keyed by row id, or 'new' for the add form) */
+let faqLinks = {};
+function initFaqLinks(){
+  faqLinks = { 'new': { bottles: [], cocktails: [] } };
+  faqRows.forEach(r => faqLinks[r.id] = {
+    bottles: (r.bottle_ids || []).slice(),
+    cocktails: (r.cocktail_slugs || []).slice()
+  });
+}
+function linkPicker(rowId){
+  const L = faqLinks[rowId] || (faqLinks[rowId] = { bottles: [], cocktails: [] });
+  const bChips = L.bottles.map(id => {
+    const b = allBottles.find(x => x.id === id);
+    return `<span class="link-chip">🥃 ${esc(b ? b.name : 'bottle #' + id)}<button onclick="removeFaqLink('${rowId}','bottles',${JSON.stringify(id)})" title="Remove">×</button></span>`;
+  }).join('');
+  const cChips = L.cocktails.map(slug => {
+    const c = cocktailsRows.find(x => x.slug === slug);
+    return `<span class="link-chip">🍸 ${esc(c ? c.name : slug)}<button onclick="removeFaqLink('${rowId}','cocktails','${esc(slug)}')" title="Remove">×</button></span>`;
+  }).join('');
+  return `
+  <div class="field"><label>Linked bottles &amp; cocktails — shown as tappable options under this answer</label>
+    <div class="link-chips" id="chips-${rowId}">${bChips}${cChips}${!bChips && !cChips ? '<span class="hint" style="margin:0;">None yet — pick below.</span>' : ''}</div>
+    <div class="grid-2" style="margin-top:8px;">
+      <input list="dl-bottles" id="pick-b-${rowId}" placeholder="＋ Type a bottle name…" onchange="addFaqLink('${rowId}','bottles',this)">
+      <input list="dl-cocktails" id="pick-c-${rowId}" placeholder="＋ Type a cocktail name…" onchange="addFaqLink('${rowId}','cocktails',this)">
+    </div>
+  </div>`;
+}
+function addFaqLink(rowId, kind, input){
+  const val = input.value.trim();
+  if (!val) return;
+  const L = faqLinks[rowId];
+  if (kind === 'bottles') {
+    const b = allBottles.find(x => x.name.toLowerCase() === val.toLowerCase());
+    if (!b) return;                          // must match a real bottle
+    if (!L.bottles.includes(b.id)) L.bottles.push(b.id);
+  } else {
+    const c = cocktailsRows.find(x => x.name.toLowerCase() === val.toLowerCase());
+    if (!c) return;
+    if (!L.cocktails.includes(c.slug)) L.cocktails.push(c.slug);
+  }
+  input.value = '';
+  refreshChips(rowId);
+}
+function removeFaqLink(rowId, kind, key){
+  const L = faqLinks[rowId];
+  L[kind] = L[kind].filter(x => x !== key);
+  refreshChips(rowId);
+}
+function refreshChips(rowId){
+  const holder = $('chips-' + rowId);
+  if (!holder) return;
+  const wrap = document.createElement('div');
+  wrap.innerHTML = linkPicker(rowId);
+  holder.replaceWith(wrap.querySelector('.link-chips'));
+}
 function keywordGuess(q){
   const stop = new Set(['what','when','where','which','about','does','have','this','that','with','from','your','you','the','and','for','are','can','how','why','who','will','would','should','could','there','their','them']);
   return String(q).toLowerCase().replace(/[^a-z0-9\s]/g,' ').split(/\s+/)
     .filter(w => w.length > 3 && !stop.has(w)).slice(0, 3).join(', ');
 }
 function renderFaq(){
-  $('panel').innerHTML = `
+  if (!Object.keys(faqLinks).length || !faqLinks['new']) initFaqLinks();
+  const dls = `
+    <datalist id="dl-bottles">${allBottles.filter(b => b.published !== false).map(b => `<option value="${esc(b.name)}">`).join('')}</datalist>
+    <datalist id="dl-cocktails">${cocktailsRows.filter(c => c.published !== false).map(c => `<option value="${esc(c.name)}">`).join('')}</datalist>`;
+  $('panel').innerHTML = dls + `
     ${faqDraft ? `
     <div class="rev-card" style="border-color: rgba(121,179,176,0.5);">
       <div class="rev-head"><h3 style="font-size:15px;">Answering a member\u2019s question</h3></div>
@@ -390,6 +455,7 @@ function renderFaq(){
         <input id="new-keys" placeholder="shipping, do you ship, delivery" value="${faqDraft ? esc(keywordGuess(faqDraft.question)) : ''}">
         <div class="hint">If a member\u2019s question to Aidan contains ANY of these words/phrases, he replies with your answer below. These run before his built-in answers, so you can override those too.</div></div>
       <div class="field"><label>Aidan\u2019s answer</label><textarea id="new-answer" rows="3" placeholder="We\u2019re a guide, not a store — no shipping here! But every bottle page shows how hard it is to find near you."></textarea></div>
+      ${linkPicker('new')}
       <button class="btn" onclick="addFaq()">Add answer</button>
       <div id="new-faq-msg" class="form-msg"></div>
     </div>
@@ -400,6 +466,7 @@ function renderFaq(){
       </label>
       <div class="field"><label>Trigger keywords</label><input id="q${r.id}-keys" value="${esc(r.keywords)}"></div>
       <div class="field"><label>Answer</label><textarea id="q${r.id}-answer" rows="3">${esc(r.answer)}</textarea></div>
+      ${linkPicker(r.id)}
       <div class="acts">
         <button class="btn sm" onclick="saveFaq(${r.id})">Save</button>
         <button class="btn danger sm" onclick="deleteFaq(${r.id})">Delete</button>
@@ -643,9 +710,12 @@ async function addFaq(){
   const box = $('new-faq-msg');
   const keywords = $('new-keys').value.trim(), answer = $('new-answer').value.trim();
   if (!keywords || !answer) return msg(box, 'Both keywords and an answer are required.', 'err');
-  const { data, error } = await db.from('aidan_faq').insert({ keywords, answer, active: true }).select().single();
+  const L = faqLinks['new'] || { bottles: [], cocktails: [] };
+  const { data, error } = await db.from('aidan_faq').insert({ keywords, answer, active: true, bottle_ids: L.bottles, cocktail_slugs: L.cocktails }).select().single();
   if (error) return msg(box, error.message, 'err');
   faqRows.push(data);
+  faqLinks[data.id] = { bottles: (data.bottle_ids || []).slice(), cocktails: (data.cocktail_slugs || []).slice() };
+  faqLinks['new'] = { bottles: [], cocktails: [] };
   if (faqDraft) {
     if (faqDraft.src === 'feedback') {
       await db.from('aidan_feedback').delete().eq('id', faqDraft.id);
@@ -660,7 +730,9 @@ async function addFaq(){
 }
 async function saveFaq(id){
   const box = $('qm' + id);
-  const payload = { keywords: $(`q${id}-keys`).value.trim(), answer: $(`q${id}-answer`).value.trim(), active: $(`q${id}-active`).checked };
+  const L = faqLinks[id] || { bottles: [], cocktails: [] };
+  const payload = { keywords: $(`q${id}-keys`).value.trim(), answer: $(`q${id}-answer`).value.trim(), active: $(`q${id}-active`).checked,
+    bottle_ids: L.bottles, cocktail_slugs: L.cocktails };
   if (!payload.keywords || !payload.answer) return msg(box, 'Both keywords and an answer are required.', 'err');
   const { error } = await db.from('aidan_faq').update(payload).eq('id', id);
   if (error) return msg(box, error.message, 'err');
