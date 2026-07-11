@@ -48,6 +48,8 @@ body.light {
 }
 body.light .type-tag { color: #4d807d; border-color: rgba(96, 143, 141, 0.55); }
 body.light .badge-beginner { background: #608f8d; color: #fff; }
+body.light .rate-row button { color: #dcbf94; }   /* light brown — visible on cream */
+body.light .rate-row button.lit { color: var(--amber); }
 body.light .msg.user { background: rgba(96, 143, 141, 0.14); border-color: rgba(96, 143, 141, 0.4); }
 @media (max-width: 767px) { body.light #site-nav .links { box-shadow: 0 18px 40px rgba(23, 34, 52, 0.16); } }
 body.light .modal, body.light #aidan-panel { box-shadow: 0 24px 70px rgba(23, 34, 52, 0.22); }
@@ -368,6 +370,7 @@ a { color: var(--amber); }
 .rate-row button { background: none; border: none; font-size: 32px; color: rgba(243,233,210,0.25); transition: color 0.1s, transform 0.1s; padding: 0 3px; }
 .rate-row button:hover { transform: scale(1.15); }
 .rate-row button.lit { color: var(--amber); }
+.band-ctas { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
 .review { border-top: 1px solid var(--line); padding: 13px 0; }
 .review .head { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; }
 .review .name { font-weight: 700; }
@@ -593,6 +596,7 @@ a { color: var(--amber); }
     font-size: 16px; padding: 10px 12px; border-radius: 9px;
   }
   #site-nav .links a.active { background: rgba(227,155,45,0.1); }
+  #site-nav .links a.nav-about { order: -1; }
   #site-nav .links a.active::after { display: none; }
   .menu-account {
     display: block; border-top: 1px solid var(--line);
@@ -1055,12 +1059,12 @@ document.addEventListener('click', e => {
 });
 function renderNav(){
   const r = parseRoute();
-  const link = (path, label) => `<a href="#${path}" class="${('/'+r.name).startsWith(path) && path!=='/' ? 'active' : (path==='/'&&r.name==='landing'?'active':'')}">${label}</a>`;
+  const link = (path, label, cls) => `<a href="#${path}" class="${cls ? cls + ' ' : ''}${('/'+r.name).startsWith(path) && path!=='/' ? 'active' : (path==='/'&&r.name==='landing'?'active':'')}">${label}</a>`;
   if (currentUser) {
     const name = (currentUser.user_metadata && currentUser.user_metadata.full_name) || currentUser.email;
     $('nav-links').innerHTML =
       link('/discover','Discover') + link('/cocktails','Cocktails') + link('/mybar','My Bar') +
-      link('/trending','Trending') + link('/scotch-guide','Scotch Guide') + link('/about','About') +
+      link('/trending','Trending') + link('/scotch-guide','Scotch Guide') + link('/about','About','nav-about') +
       (AUTH_ENABLED ? `
       <div class="menu-account">
         <span class="who">Cheers, ${esc(String(name).split(' ')[0])}</span>
@@ -1282,16 +1286,20 @@ function renderAbout(){
       <div class="step-card"><div class="num">05</div><h3>Learn the deep stuff</h3><p>The Scotch Guide\u2019s interactive peat map explains regions and smoke levels without requiring a single day of prior knowledge.</p></div>
       <div class="step-card"><div class="num">06</div><h3>Ask Aidan anything</h3><p>Aidan is the friend who knows whiskey and never makes you feel dumb for asking. He\u2019s one tap away on every page.</p></div>
     </div>
+    ${currentUser ? '' : `
     <div class="about-band">
       <div>
         <h2>Built for the store aisle moment</h2>
         <p>The whole site exists for one moment: you, holding an unfamiliar bottle, wondering if it\u2019s any good and what you\u2019d do with it. Open Whiskey Horizon, look it up, and know in thirty seconds.</p>
       </div>
       <div style="text-align:center;">
-        <a class="btn" href="#/signup">Get Started Free</a>
+        <div class="band-ctas">
+          <a class="btn" href="#/signup">Get Started Free</a>
+          <a class="btn ghost" href="#/login">Log In</a>
+        </div>
         <p class="muted" style="font-size:12.5px; margin-top:10px;">21+ only. Please enjoy responsibly.</p>
       </div>
-    </div>
+    </div>`}
   </div>`;
 }
 
