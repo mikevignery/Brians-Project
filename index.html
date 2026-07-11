@@ -601,7 +601,27 @@ a { color: var(--amber); }
   /* ---- discover ---- */
   .discover-layout { grid-template-columns: 1fr; gap: 16px; padding-top: 18px; }
   .sidebar { position: static; }
-  .sidebar details { border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; background: var(--barrel); }
+  .sidebar details { border: 1px solid var(--line); border-radius: 12px; background: var(--barrel); overflow: hidden; }
+  .sidebar details > summary {
+    list-style: none; display: flex; align-items: center; gap: 10px;
+    padding: 14px 16px; min-height: 50px; cursor: pointer; user-select: none;
+  }
+  .sidebar details > summary::-webkit-details-marker { display: none; }
+  .sidebar .f-title { font-weight: 700; color: var(--amber); white-space: nowrap; display: flex; align-items: center; gap: 7px; }
+  .sidebar .f-count {
+    background: var(--amber); color: #241505; font-size: 11.5px; font-weight: 700;
+    border-radius: 20px; padding: 1px 8px; display: inline-block;
+  }
+  .sidebar .f-active {
+    flex: 1; color: var(--muted); font-size: 13px; text-align: right;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .sidebar .f-chev { color: var(--muted); font-size: 13px; transition: transform 0.15s ease; }
+  .sidebar details[open] .f-chev { transform: rotate(180deg); }
+  .sidebar details[open] > summary { border-bottom: 1px solid var(--line); }
+  .sidebar details > *:not(summary) { padding-left: 16px; padding-right: 16px; }
+  .sidebar .side-group:first-of-type { margin-top: 14px; }
+  .sidebar .side-group:last-of-type { padding-bottom: 14px; margin-bottom: 0; }
   .side-list button, .side-check { min-height: 42px; }
   .controls-row input[type=search] { min-width: 0; width: 100%; flex: 1 1 100%; }
   .result-row { flex-direction: row; }
@@ -668,9 +688,10 @@ a { color: var(--amber); }
   .aidan-input button { min-width: 58px; min-height: 44px; }
 }
 @media (min-width: 768px) {
-  .sidebar details { border: none; padding: 0; }
+  .sidebar details { border: none; padding: 0; background: none; overflow: visible; }
   .sidebar details > summary { display: none; }
-  .sidebar details[open] { padding: 0; }
+  .sidebar details > *:not(summary) { padding-left: 0; padding-right: 0; }
+  .sidebar .side-group:first-of-type { margin-top: 0; }
 }
 </style>
 </head>
@@ -1335,9 +1356,13 @@ function renderDiscover(){
     </div>
     <div class="discover-layout">
       <aside class="sidebar">
-        <details open>
-          <summary style="font-weight:700; cursor:pointer; color:var(--amber);">Filters</summary>
-          <div class="side-group" style="margin-top:14px;">
+        <details id="filter-box" ${isDesktop() ? 'open' : ''}>
+          <summary>
+            <span class="f-title">☰ Filters${filterCount() ? ` <span class="f-count">${filterCount()}</span>` : ''}</span>
+            <span class="f-active">${esc(filterSummary())}</span>
+            <span class="f-chev">▾</span>
+          </summary>
+          <div class="side-group">
             <h4>Category</h4>
             <div class="side-list">
               ${types.map(t => `<button class="${t===activeType?'active':''}" onclick="setType('${esc(t)}')">${t==='All' ? 'All Spirits' : esc(t)}</button>`).join('')}
@@ -1346,7 +1371,7 @@ function renderDiscover(){
           ${SHOW_PRICES ? `
           <div class="side-group">
             <h4>Price Range</h4>
-            <input type="range" min="20" max="200" step="5" value="${priceMax}" style="width:100%; accent-color:var(--amber);" oninput="priceMax=+this.value; $('price-cap').textContent = priceMax>=200 ? '$200+' : '$'+priceMax; renderGrid();">
+            <input type="range" min="20" max="200" step="5" value="${priceMax}" style="width:100%; accent-color:var(--amber);" oninput="priceMax=+this.value; $('price-cap').textContent = priceMax>=200 ? '$200+' : '$'+priceMax; renderGrid(); refreshFilterBar();">
             <div style="display:flex; justify-content:space-between; color:var(--muted); font-size:12.5px;"><span>$20</span><span id="price-cap">${priceMax>=200?'$200+':'$'+priceMax}</span></div>
           </div>` : ''}
           <div class="side-group">
@@ -1357,7 +1382,7 @@ function renderDiscover(){
           </div>
           <div class="side-group">
             <h4>Good for beginners</h4>
-            <label class="side-check"><input type="checkbox" ${beginnerOnly?'checked':''} onchange="beginnerOnly=this.checked; renderGrid();"> ⭐ Beginner friendly only</label>
+            <label class="side-check"><input type="checkbox" ${beginnerOnly?'checked':''} onchange="beginnerOnly=this.checked; renderGrid(); closeFiltersOnMobile();"> ⭐ Beginner friendly only</label>
           </div>
         </details>
       </aside>
@@ -1394,8 +1419,46 @@ function renderDiscover(){
   $('compare-tray').classList.toggle('hidden', !compareMode);
 }
 
-function setType(t){ activeType = t; renderDiscover(); }
-function setAvail(a){ activeAvail = a; renderDiscover(); }
+function isDesktop(){ try { return window.matchMedia('(min-width: 768px)').matches; } catch (_) { return true; } }
+function filterCount(){
+  return (activeType !== 'All' ? 1 : 0) + (activeAvail !== 'All' ? 1 : 0) + (beginnerOnly ? 1 : 0)
+       + (SHOW_PRICES && priceMax < 200 ? 1 : 0);
+}
+function filterSummary(){
+  const parts = [];
+  if (activeType !== 'All') parts.push(activeType);
+  if (activeAvail !== 'All') parts.push(activeAvail);
+  if (beginnerOnly) parts.push('Beginner');
+  if (SHOW_PRICES && priceMax < 200) parts.push('Under $' + priceMax);
+  return parts.length ? parts.join(' · ') : 'Everything showing';
+}
+function refreshFilterBar(){
+  const box = $('filter-box');
+  if (!box) return;
+  const t = box.querySelector('.f-title'), a = box.querySelector('.f-active');
+  if (t) t.innerHTML = '☰ Filters' + (filterCount() ? ` <span class="f-count">${filterCount()}</span>` : '');
+  if (a) a.textContent = filterSummary();
+}
+function closeFiltersOnMobile(){
+  const box = $('filter-box');
+  if (box && !isDesktop()) box.removeAttribute('open');
+  refreshFilterBar();
+}
+function setType(t){ activeType = t; renderDiscover(); closeFiltersOnMobile(); }
+function setAvail(a){ activeAvail = a; renderDiscover(); closeFiltersOnMobile(); }
+// keep the box in the right state if the viewport crosses the breakpoint (e.g. rotation)
+(function(){
+  try {
+    const mq = window.matchMedia('(min-width: 768px)');
+    const sync = e => {
+      const box = $('filter-box');
+      if (!box) return;
+      if (e.matches) box.setAttribute('open', ''); else box.removeAttribute('open');
+    };
+    if (mq.addEventListener) mq.addEventListener('change', sync);
+    else if (mq.addListener) mq.addListener(sync);   // older Safari
+  } catch (_) { /* no matchMedia — filters simply stay open */ }
+})();
 
 function filteredBottles(){
   const q = searchQ.trim().toLowerCase();
@@ -1825,7 +1888,7 @@ function renderCocktails(){
       <aside class="sidebar">
         <details open>
           <summary style="font-weight:700; cursor:pointer; color:var(--amber);">Filter by</summary>
-          <div class="side-group" style="margin-top:14px;">
+          <div class="side-group">
             <h4>Spirit Type</h4>
             <div class="side-list">${spirits.map(s => `<button class="${s===cSpirit?'active':''}" onclick="cSpirit='${s}'; renderCocktails();">${s}</button>`).join('')}</div>
           </div>
