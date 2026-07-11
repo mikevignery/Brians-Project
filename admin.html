@@ -72,6 +72,7 @@ header .who { color: var(--muted); font-size: 13px; }
 .pill.live { background: rgba(143,174,107,0.2); color: var(--ok); border: 1px solid rgba(143,174,107,0.4); }
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
 .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0 16px; }
+.grid-4 { display: grid; grid-template-columns: 1.2fr 0.8fr 0.8fr 1.2fr; gap: 0 16px; }
 .acts { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
 .hint { font-size: 12px; color: var(--muted); margin-top: 4px; }
 .empty { border: 1px dashed var(--line); border-radius: 12px; padding: 34px 20px; text-align: center; color: var(--muted); margin-bottom: 18px; }
@@ -93,7 +94,7 @@ header .who { color: var(--muted); font-size: 13px; }
 footer { padding: 30px 24px 50px; color: var(--muted); font-size: 12.5px; text-align: center; }
 
 @media (max-width: 720px) {
-  .grid-2, .grid-3 { grid-template-columns: 1fr; }
+  .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
   input, select, textarea { font-size: 16px; }
   .acts .btn { flex: 1; text-align: center; }
 }
@@ -138,6 +139,7 @@ footer { padding: 30px 24px 50px; color: var(--muted); font-size: 12.5px; text-a
     <div class="tabs">
       <button id="tab-pending" class="active" onclick="setTab('pending')">Pending Review <span class="count" id="count-pending">0</span></button>
       <button id="tab-shelf" onclick="setTab('shelf')">The Shelf <span class="count" id="count-shelf">0</span></button>
+      <button id="tab-cocktails" onclick="setTab('cocktails')">Cocktails <span class="count" id="count-cocktails">0</span></button>
       <button id="tab-faq" onclick="setTab('faq')">Aidan Q&amp;A <span class="count" id="count-faq">0</span></button>
       <button id="tab-unanswered" onclick="setTab('unanswered')">Unanswered <span class="count" id="count-unanswered">0</span></button>
       <button id="tab-feedback" onclick="setTab('feedback')">Feedback <span class="count" id="count-feedback">0</span></button>
@@ -154,6 +156,7 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
 let db, currentUser = null, tab = 'pending';
 let allBottles = [], faqRows = [], namesById = {}, unanswered = [], feedback = [], faqDraft = null;
+let cocktailsRows = [], cocktailsOk = true, editingCocktail = null;
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function msg(el, text, cls){ el.textContent = text; el.className = 'form-msg ' + cls; }
@@ -190,18 +193,21 @@ async function enter(){
 
 /* ---------- data ---------- */
 async function loadAll(){
-  const [{ data: b, error: be }, { data: f }, { data: p }, unRes, fbRes] = await Promise.all([
+  const [{ data: b, error: be }, { data: f }, { data: p }, unRes, fbRes, cxRes] = await Promise.all([
     db.from('bottles').select('*').order('id', { ascending: false }),
     db.from('aidan_faq').select('*').order('id'),
     db.from('profiles').select('id, full_name'),
     db.from('aidan_unanswered').select('*').order('created_at', { ascending: false }),
-    db.from('aidan_feedback').select('*').order('created_at', { ascending: false })
+    db.from('aidan_feedback').select('*').order('created_at', { ascending: false }),
+    db.from('cocktails').select('*').order('sort').order('name')
   ]);
   if (be) alert('Could not load bottles: ' + be.message);
   allBottles = b || [];
   faqRows = f || [];
   unanswered = (unRes && unRes.data) || [];
   feedback = (fbRes && fbRes.data) || [];
+  cocktailsOk = !(cxRes && cxRes.error);
+  cocktailsRows = (cxRes && cxRes.data) || [];
   namesById = {};
   (p || []).forEach(x => namesById[x.id] = x.full_name || 'Member');
   renderCounts(); render();
@@ -213,11 +219,12 @@ function renderCounts(){
   $('count-shelf').textContent = shelf().length;
   $('count-faq').textContent = faqRows.length;
   $('count-unanswered').textContent = unanswered.length;
+  $('count-cocktails').textContent = cocktailsRows.length;
   const downs = feedback.filter(f => f.verdict === 'down').length;
   $('count-feedback').textContent = downs ? `${feedback.length} · ${downs}👎` : feedback.length;
 }
-function setTab(t){ tab = t; ['pending','shelf','faq','unanswered','feedback'].forEach(x => $('tab-'+x).classList.toggle('active', x === t)); render(); }
-function render(){ if (tab === 'pending') renderPending(); else if (tab === 'shelf') renderShelf(); else if (tab === 'unanswered') renderUnanswered(); else if (tab === 'feedback') renderFeedback(); else renderFaq(); }
+function setTab(t){ tab = t; ['pending','shelf','cocktails','faq','unanswered','feedback'].forEach(x => $('tab-'+x).classList.toggle('active', x === t)); render(); }
+function render(){ if (tab === 'pending') renderPending(); else if (tab === 'shelf') renderShelf(); else if (tab === 'cocktails') renderCocktails(); else if (tab === 'unanswered') renderUnanswered(); else if (tab === 'feedback') renderFeedback(); else renderFaq(); }
 
 /* ---------- cocktails <-> friendly lines ---------- */
 function cocktailsToLines(c){
@@ -238,10 +245,11 @@ function bottleForm(b){
     <div class="field"><label>Bottle name</label><input id="f${b.id}-name" value="${esc(b.name)}"></div>
     <div class="field"><label>Distillery / brand</label><input id="f${b.id}-company" value="${esc(b.company)}"></div>
   </div>
-  <div class="grid-3">
+  <div class="grid-4">
     <div class="field"><label>Category</label>
       <select id="f${b.id}-type">${TYPES.map(t => `<option ${t === b.type ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
     <div class="field"><label>Price (USD)</label><input id="f${b.id}-price" type="number" step="0.01" value="${b.price ?? ''}"></div>
+    <div class="field"><label>Proof</label><input id="f${b.id}-proof" type="number" step="0.1" value="${b.proof ?? ''}"></div>
     <div class="field"><label>Availability</label>
       <select id="f${b.id}-rarity">${[1,2,3,4,5].map(n => `<option value="${n}" ${n === (b.rarity || 1) ? 'selected' : ''}>${n} — ${RARITY[n]}</option>`).join('')}</select></div>
   </div>
@@ -256,11 +264,13 @@ function bottleForm(b){
 function collect(b){
   const v = suffix => $(`f${b.id}-${suffix}`).value;
   const price = v('price').trim();
+  const proof = v('proof').trim();
   return {
     name: v('name').trim(),
     company: v('company').trim(),
     type: v('type'),
     price: price === '' ? null : +price,
+    proof: proof === '' ? null : +proof,
     rarity: +v('rarity'),
     image_url: v('image').trim() || null,
     tasting_notes: v('notes').trim(),
@@ -393,6 +403,113 @@ function renderFaq(){
       <div id="qm${r.id}" class="form-msg"></div>
     </div>`).join('')}`;
 }
+/* ---------- cocktail library ---------- */
+const DIFFS = ['Easy','Medium','Hard'];
+function slugify(s){ return String(s).toLowerCase().trim().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,''); }
+function cocktailForm(c){
+  const ing = (c.ingredients || []).map(x => `${x[0]} :: ${x[1]}`).join('\n');
+  const met = (c.method || []).join('\n');
+  return `
+  <div class="grid-3">
+    <div class="field"><label>Name</label><input id="c${c.id}-name" value="${esc(c.name || '')}"></div>
+    <div class="field"><label>Emoji</label><input id="c${c.id}-emoji" value="${esc(c.emoji || '🥃')}"></div>
+    <div class="field"><label>URL slug</label><input id="c${c.id}-slug" value="${esc(c.slug || '')}" placeholder="auto from name if blank"></div>
+  </div>
+  <div class="grid-2">
+    <div class="field"><label>Spirit line shown (e.g. "Bourbon or Rye")</label><input id="c${c.id}-spirit" value="${esc(c.spirit || '')}"></div>
+    <div class="field"><label>Match categories — comma separated (Bourbon, Rye, Scotch, Irish, Japanese)</label><input id="c${c.id}-types" value="${esc((c.types || []).join(', '))}"></div>
+  </div>
+  <div class="grid-3">
+    <div class="field"><label>Difficulty</label><select id="c${c.id}-diff">${DIFFS.map(d => `<option ${d === (c.diff || 'Easy') ? 'selected' : ''}>${d}</option>`).join('')}</select></div>
+    <div class="field"><label>Time (e.g. "4 min")</label><input id="c${c.id}-time" value="${esc(c.time || '')}"></div>
+    <div class="field"><label>ABV (e.g. "~32%")</label><input id="c${c.id}-abv" value="${esc(c.abv || '')}"></div>
+  </div>
+  <div class="field"><label>Tagline (one sentence on the card)</label><input id="c${c.id}-tagline" value="${esc(c.tagline || '')}"></div>
+  <div class="field"><label>Ingredients — one per line: Ingredient :: Amount</label>
+    <textarea id="c${c.id}-ing" rows="5" placeholder="Bourbon or rye :: 2 oz">${esc(ing)}</textarea></div>
+  <div class="field"><label>Method — one step per line, in order</label>
+    <textarea id="c${c.id}-met" rows="5" placeholder="Muddle the sugar cube with bitters…">${esc(met)}</textarea></div>
+  <label class="check-line"><input type="checkbox" id="c${c.id}-pub" ${c.published !== false ? 'checked' : ''}> Published (unticked = draft, hidden from members)</label>`;
+}
+function collectCocktail(c){
+  const v = k => $(`c${c.id}-${k}`).value;
+  return {
+    name: v('name').trim(),
+    emoji: v('emoji').trim() || '🥃',
+    slug: slugify(v('slug').trim() || v('name')),
+    spirit: v('spirit').trim(),
+    types: v('types').split(',').map(t => t.trim()).filter(Boolean),
+    diff: v('diff'),
+    time: v('time').trim() || '5 min',
+    abv: v('abv').trim(),
+    tagline: v('tagline').trim(),
+    ingredients: v('ing').split('\n').map(l => l.trim()).filter(Boolean).map(l => {
+      const i = l.indexOf('::');
+      return i === -1 ? [l, ''] : [l.slice(0, i).trim(), l.slice(i + 2).trim()];
+    }),
+    method: v('met').split('\n').map(l => l.trim()).filter(Boolean),
+    published: $(`c${c.id}-pub`).checked
+  };
+}
+function renderCocktails(){
+  if (!cocktailsOk) {
+    $('panel').innerHTML = '<div class="empty">The cocktail library table isn\u2019t set up yet — run <b>cocktails-upgrade.sql</b> in the Supabase SQL Editor. Until then, the site serves its 12 built-in recipes.</div>';
+    return;
+  }
+  $('panel').innerHTML = `
+    <div class="controls" style="align-items:center;">
+      <p class="muted" style="font-size:13.5px; flex:1; min-width:220px;">These recipes power the Cocktails page, bottle pairings, and Aidan\u2019s cocktail answers. Changes are live immediately.</p>
+      <button class="btn ghost" onclick="addCocktail()">+ New recipe</button>
+    </div>` +
+    (cocktailsRows.length ? '' : '<div class="empty">No recipes yet — add your first, or re-run cocktails-upgrade.sql to load the classic 12.</div>') +
+    cocktailsRows.map(c => editingCocktail === c.id ? `
+    <div class="rev-card">
+      <div class="rev-head"><span class="pill ${c.published !== false ? 'live' : 'pending'}">${c.published !== false ? 'Live' : 'Draft'}</span><h3>Editing: ${esc(c.name)}</h3></div>
+      ${cocktailForm(c)}
+      <div class="acts">
+        <button class="btn" onclick="saveCocktail(${c.id})">Save recipe</button>
+        <button class="btn ghost" onclick="editingCocktail=null; renderCocktails();">Cancel</button>
+        <button class="btn danger" onclick="deleteCocktail(${c.id})">Delete</button>
+      </div>
+      <div id="cm${c.id}" class="form-msg"></div>
+    </div>` : `
+    <div class="shelf-row">
+      <div class="info"><b>${esc(c.emoji)} ${esc(c.name)} ${c.published === false ? '<span class="pill pending" style="margin-left:6px;">Draft</span>' : ''}</b>
+        <small>${esc(c.spirit)} · ${esc(c.diff)} · ${esc(c.time)} · matches: ${esc((c.types || []).join(', ') || '—')}</small></div>
+      <button class="btn ghost sm" onclick="editingCocktail=${c.id}; renderCocktails();">Edit</button>
+    </div>`).join('');
+}
+async function addCocktail(){
+  const { data, error } = await db.from('cocktails')
+    .insert({ slug: 'new-recipe-' + Date.now(), name: 'New recipe', published: false, sort: 500 })
+    .select().single();
+  if (error) return alert(error.message);
+  cocktailsRows.push(data);
+  editingCocktail = data.id;
+  renderCounts(); renderCocktails();
+}
+async function saveCocktail(id){
+  const c = cocktailsRows.find(x => x.id === id);
+  const box = $('cm' + id);
+  const payload = collectCocktail(c);
+  if (!payload.name || payload.name === 'New recipe') return msg(box, 'Give the recipe a real name first.', 'err');
+  if (!payload.ingredients.length || !payload.method.length) return msg(box, 'At least one ingredient and one method step are required.', 'err');
+  if (!payload.types.length) return msg(box, 'Add at least one match category so bottle pairing works.', 'err');
+  const { error } = await db.from('cocktails').update(payload).eq('id', id);
+  if (error) return msg(box, error.message.includes('duplicate') ? 'That URL slug is already used by another recipe.' : error.message, 'err');
+  Object.assign(c, payload);
+  msg(box, payload.published ? 'Saved — live on the Cocktails page now. 🍸' : 'Draft saved (hidden from members).', 'ok');
+  setTimeout(() => { editingCocktail = null; renderCocktails(); }, 800);
+}
+async function deleteCocktail(id){
+  if (!confirm('Delete this recipe permanently?')) return;
+  const { error } = await db.from('cocktails').delete().eq('id', id);
+  if (error) return alert(error.message);
+  cocktailsRows = cocktailsRows.filter(x => x.id !== id);
+  editingCocktail = null;
+  renderCounts(); renderCocktails();
+}
+
 /* ---------- answer feedback (thumbs) ---------- */
 let fbFilter = 'all';
 function renderFeedback(){
