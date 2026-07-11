@@ -567,6 +567,13 @@ a { color: var(--amber); }
   font-weight: 700; font-size: 13.5px; font-family: inherit; cursor: pointer;
 }
 .msg.aidan-cta button:hover { filter: brightness(1.06); }
+.msg.aidan-links { background: none; border: none; padding: 2px 0 4px; display: flex; flex-wrap: wrap; gap: 7px; max-width: 100%; }
+.msg.aidan-links button {
+  background: var(--barrel-2); border: 1px solid var(--line); color: var(--paper);
+  border-radius: 20px; padding: 8px 14px; font-size: 13px; font-weight: 700;
+  font-family: inherit; cursor: pointer;
+}
+.msg.aidan-links button:hover { border-color: var(--amber); }
 .fb-row { display: flex; gap: 6px; align-self: flex-start; padding: 0 2px 4px; }
 .fb-row button {
   color: transparent; text-shadow: 0 0 0 var(--icon);
@@ -2144,10 +2151,14 @@ function cdSay(text){ const d = document.createElement('div'); d.className = 'ms
 function cdUser(text){ const d = document.createElement('div'); d.className = 'msg user'; d.textContent = text; $('cd-log').appendChild(d); $('cd-log').scrollTop = $('cd-log').scrollHeight; }
 function cdReply(t){
   const reply = aidanBrain(t, currentCocktail());
+  const faqRow = lastFaqRow;
   setTimeout(() => {
     cdSay(reply);
     if (reply === AIDAN_FALLBACK) aidanOfferQuiz('cd-log', false);
-    else aidanFeedback('cd-log', t, reply);
+    else {
+      if (faqRow) aidanShowLinks('cd-log', faqRow, false);
+      aidanFeedback('cd-log', t, reply);
+    }
   }, 350);
 }
 function cdAsk(t){ cdUser(t); cdReply(t); }
@@ -2587,10 +2598,14 @@ function aidanSay(text){ const d = document.createElement('div'); d.className = 
 function aidanUser(text){ const d = document.createElement('div'); d.className = 'msg user'; d.textContent = text; $('aidan-log').appendChild(d); $('aidan-log').scrollTop = $('aidan-log').scrollHeight; }
 function aidanReply(text){
   const reply = aidanBrain(text);
+  const faqRow = lastFaqRow;
   setTimeout(() => {
     aidanSay(reply);
     if (reply === AIDAN_FALLBACK) aidanOfferQuiz('aidan-log', true);
-    else aidanFeedback('aidan-log', text, reply);
+    else {
+      if (faqRow) aidanShowLinks('aidan-log', faqRow, true);
+      aidanFeedback('aidan-log', text, reply);
+    }
   }, 350);
 }
 function aidanQuick(text){ aidanUser(text); aidanReply(text); }
@@ -2602,6 +2617,26 @@ function aidanSend(){
   aidanReply(t);
 }
 function cheapest(list){ return list.slice().sort((a,b) => (a.price||999)-(b.price||999)); }
+
+/* tappable bottle/cocktail options under a linked Q&A answer */
+let lastFaqRow = null;
+function aidanShowLinks(logId, row, closesPanel){
+  const bs = (row.bottle_ids || []).map(id => bottles.find(b => b.id === id)).filter(Boolean);
+  const cs = (row.cocktail_slugs || []).map(sl => COCKTAILS.find(c => c.slug === sl)).filter(Boolean);
+  if (!bs.length && !cs.length) return;
+  const d = document.createElement('div');
+  d.className = 'msg aidan aidan-links';
+  const mk = (label, href) => {
+    const b = document.createElement('button');
+    b.innerHTML = label;
+    b.onclick = () => { if (closesPanel) $('aidan-panel').classList.add('hidden'); go(href); };
+    return b;
+  };
+  bs.forEach(b => d.appendChild(mk('<span class="mono">🥃</span> ' + esc(b.name), '/bottle/' + b.id)));
+  cs.forEach(c => d.appendChild(mk('<span class="mono">🍸</span> ' + esc(c.name), '/cocktail/' + c.slug)));
+  $(logId).appendChild(d);
+  $(logId).scrollTop = $(logId).scrollHeight;
+}
 
 /* 👍/👎 under every real answer — captures question + answer + verdict */
 function aidanFeedback(logId, question, answer){
@@ -2670,9 +2705,10 @@ function aidanBrain(input, cocktail){
   }
 
   // database-managed answers first — lets the owners add or override replies
+  lastFaqRow = null;
   for (const row of aidanFaq) {
     const keys = String(row.keywords || '').split(',').map(k => k.trim().toLowerCase()).filter(Boolean);
-    if (keys.length && keys.some(k => q.includes(k))) return row.answer;
+    if (keys.length && keys.some(k => q.includes(k))) { lastFaqRow = row; return row.answer; }
   }
 
   if (has('new', 'beginner', 'start', 'first', 'never')) {
