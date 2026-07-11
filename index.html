@@ -371,6 +371,11 @@ a { color: var(--amber); }
 .rate-row button:hover { transform: scale(1.15); }
 .rate-row button.lit { color: var(--amber); }
 .band-ctas { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.suggest-band {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  border: 1px dashed var(--line); border-radius: 12px; padding: 18px 20px; margin: 26px 0 50px;
+  background: linear-gradient(120deg, rgba(227,155,45,0.06), transparent);
+}
 .review { border-top: 1px solid var(--line); padding: 13px 0; }
 .review .head { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; }
 .review .name { font-weight: 700; }
@@ -801,6 +806,28 @@ a { color: var(--amber); }
 </div>
 
 <!-- ============================ LOG A DRAM MODAL ============================ -->
+<div id="suggest-back" class="modal-back hidden" onclick="if(event.target===this) closeSuggest()">
+  <div class="modal" role="dialog" aria-modal="true" style="max-width:560px;">
+    <div class="modal-actions"><button class="txt-btn" onclick="closeSuggest()">Close</button></div>
+    <div class="modal-info"><span class="type-tag">Suggest a bottle</span><h2>Bottle not in our inventory?</h2></div>
+    <p class="muted" style="font-size:13.5px; margin-top:6px;">Fill in what you know — we\u2019ll review it, complete the details, and publish it to the shelf.</p>
+    <div style="margin-top:16px;">
+      <div class="field"><label for="sug-name">Bottle name *</label><input id="sug-name" type="text" placeholder="e.g. Eagle Rare 10 Year"></div>
+      <div class="two-col">
+        <div class="field"><label for="sug-company">Distillery / brand *</label><input id="sug-company" type="text" placeholder="e.g. Buffalo Trace Distillery"></div>
+        <div class="field"><label for="sug-type">Category *</label>
+          <select id="sug-type">
+            <option>Bourbon</option><option>Rye</option><option>Scotch</option>
+            <option>Irish</option><option>Japanese</option><option>Tennessee</option><option>Other</option>
+          </select></div>
+      </div>
+      <div class="field"><label for="sug-notes">Tasting notes (if you know them)</label><input id="sug-notes" type="text" placeholder="e.g. Toffee, orange peel, oak"></div>
+      <div class="field"><label for="sug-why">Anything else? (why it belongs, where you found it\u2026)</label><textarea id="sug-why" rows="3"></textarea></div>
+      <button class="btn full" onclick="submitSuggestion()">Send for review</button>
+      <div id="sug-msg" class="form-msg"></div>
+    </div>
+  </div>
+</div>
 <div id="dram-back" class="modal-back hidden" onclick="if(event.target===this) closeDram()">
   <div class="modal" role="dialog" aria-modal="true" style="max-width:520px;">
     <div class="modal-actions"><button class="txt-btn" onclick="closeDram()">Close</button></div>
@@ -1097,7 +1124,27 @@ window.addEventListener('DOMContentLoaded', async () => {
     $('setup-notice').classList.remove('hidden');
     return;
   }
-  db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  // Auth persistence: sessionStorage by default (signed out when the browser
+  // closes — safest for a 21+ site) unless "Keep me signed in" was checked.
+  const KEEP_KEY = 'wh-keep';
+  const keepOn = () => { try { return localStorage.getItem(KEEP_KEY) === '1'; } catch (_) { return false; } };
+  window.setKeepSignedIn = v => { try { localStorage.setItem(KEEP_KEY, v ? '1' : '0'); } catch (_) {} };
+  const authStorage = {
+    getItem: k => { try { return (keepOn() ? localStorage : sessionStorage).getItem(k) ?? (keepOn() ? sessionStorage : localStorage).getItem(k); } catch (_) { return null; } },
+    setItem: (k, v) => { try { (keepOn() ? localStorage : sessionStorage).setItem(k, v); (keepOn() ? sessionStorage : localStorage).removeItem(k); } catch (_) {} },
+    removeItem: k => { try { localStorage.removeItem(k); sessionStorage.removeItem(k); } catch (_) {} }
+  };
+  db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { storage: authStorage, persistSession: true } });
+
+  // 2) Fresh browser session? Always start at the front door, not a restored deep link.
+  try {
+    if (!sessionStorage.getItem('wh-open')) {
+      sessionStorage.setItem('wh-open', '1');
+      if (window.location.hash && window.location.hash !== '#/' && !window.location.hash.includes('type=recovery')) {
+        history.replaceState(null, '', window.location.pathname);
+      }
+    }
+  } catch (_) {}
 
   if (!AUTH_ENABLED) { currentUser = GUEST_USER; await loadEverything(); route(); return; }
 
@@ -1156,6 +1203,7 @@ async function signUp(){
 
 async function signIn(){
   const box = $('si-msg');
+  setKeepSignedIn($('si-keep') && $('si-keep').checked);
   msg(box, 'Signing in\u2026', 'ok');
   const { error } = await db.auth.signInWithPassword({ email: $('si-email').value.trim(), password: $('si-pass').value });
   if (error) msg(box, error.message, 'err');
@@ -1185,14 +1233,20 @@ async function submitNewPassword(){
 /* ============================================================
    DATA
    ============================================================ */
+let aidanFaq = [];
 async function loadEverything(){
   const [{ data: b, error: be }, { data: r }, { data: p }] = await Promise.all([
     db.from('bottles').select('*').order('name'),
     db.from('ratings').select('*'),
     db.from('profiles').select('id, full_name')
   ]);
+  // custom Q&A rows Aidan checks before his built-in answers (optional table)
+  try {
+    const { data: faq, error: fe } = await db.from('aidan_faq').select('*').eq('active', true);
+    aidanFaq = fe ? [] : (faq || []);
+  } catch (_) { aidanFaq = []; }
   if (be) { console.warn(be.message); }
-  bottles = b || [];
+  bottles = (b || []).filter(x => x.published !== false); // hide pending suggestions (admins can see them in the DB)
   ratingsByBottle = {};
   (r || []).forEach(rt => (ratingsByBottle[rt.bottle_id] = ratingsByBottle[rt.bottle_id] || []).push(rt));
   namesById = {};
@@ -1355,7 +1409,10 @@ function renderAuthPage(which, notice){
       ${notice ? `<div class="form-msg err" style="display:block; margin:0 0 16px;">${esc(notice)}</div>` : ''}
       <div class="field"><label for="si-email">Email</label><input id="si-email" type="email" autocomplete="email"></div>
       <div class="field"><label for="si-pass">Password</label><input id="si-pass" type="password" autocomplete="current-password" onkeydown="if(event.key==='Enter') signIn()"></div>
-      <div style="text-align:right; margin:-6px 0 14px;"><button class="link-btn" onclick="forgotPassword()">Forgot password?</button></div>
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin:-6px 0 14px;">
+        <label class="side-check" style="margin:0; font-size:13.5px;"><input type="checkbox" id="si-keep"> Keep me signed in</label>
+        <button class="link-btn" onclick="forgotPassword()">Forgot password?</button>
+      </div>
       <button class="btn full" onclick="signIn()">Log In</button>
       <div id="si-msg" class="form-msg"></div>
       <p class="legal-line">New here? <a href="#/signup">Create a free account</a></p>
@@ -1445,6 +1502,13 @@ function renderDiscover(){
           </label>
         </div>
         <div class="grid" id="grid"></div>
+        <div class="suggest-band">
+          <div>
+            <b>Bottle not in our inventory?</b>
+            <p class="muted" style="font-size:13.5px; margin-top:3px;">Tell us about it — we review every suggestion before it joins the shelf.</p>
+          </div>
+          <button class="btn ghost" onclick="openSuggest()">Suggest a bottle</button>
+        </div>
       </section>
     </div>
   </div>`;
@@ -2174,6 +2238,34 @@ async function pickBottle(id, btn){
   document.body.style.overflow = 'hidden';
 }
 
+/* ---------- suggest a bottle (goes to review, not the shelf) ---------- */
+function openSuggest(){
+  ['sug-name','sug-company','sug-notes','sug-why'].forEach(id => $(id).value = '');
+  $('sug-msg').className = 'form-msg';
+  $('suggest-back').classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+function closeSuggest(){ $('suggest-back').classList.add('hidden'); document.body.style.overflow = ''; }
+async function submitSuggestion(){
+  const box = $('sug-msg');
+  const name = $('sug-name').value.trim(), company = $('sug-company').value.trim();
+  if (!name || !company) return msg(box, 'Bottle name and distillery are required.', 'err');
+  const extra = $('sug-why').value.trim();
+  const { error } = await db.from('bottles').insert({
+    name, company,
+    type: $('sug-type').value,
+    tasting_notes: $('sug-notes').value.trim() || 'To be confirmed',
+    description: (extra ? extra + '\n\n' : '') + '[Member suggestion — pending review]',
+    rarity: 1,
+    published: false
+  });
+  if (error) return msg(box, error.message.includes('published') || error.message.includes('column')
+    ? 'Suggestions aren\u2019t enabled yet — the site owners need to run community-upgrade.sql.'
+    : error.message, 'err');
+  msg(box, 'Sent! We\u2019ll review it and add it to the shelf. Thanks for the tip. 🥃', 'ok');
+  setTimeout(closeSuggest, 1600);
+}
+
 /* ---------- log a dram ---------- */
 let dramEditId = null;
 function openDram(editId){
@@ -2475,6 +2567,12 @@ function aidanBrain(input, cocktail){
     if (has('substitute', 'instead', 'don\u2019t have', 'dont have', 'no ')) return `Missing something? The whiskey is the soul of a ${cocktail.name} — don\u2019t swap that. Bitters, syrups, and garnishes are flexible: honey for sugar, any citrus peel, and a splash of soda never ruined anything.`;
   }
 
+  // database-managed answers first — lets the owners add or override replies
+  for (const row of aidanFaq) {
+    const keys = String(row.keywords || '').split(',').map(k => k.trim().toLowerCase()).filter(Boolean);
+    if (keys.length && keys.some(k => q.includes(k))) return row.answer;
+  }
+
   if (has('new', 'beginner', 'start', 'first', 'never')) {
     const easy = bottles.filter(b => isBeginner(b));
     const pick = easy[0] || bottles[0];
@@ -2553,6 +2651,7 @@ document.addEventListener('keydown', e => {
   if (!$('quiz-back').classList.contains('hidden')) return closeQuiz();
   if (!$('compare-back').classList.contains('hidden')) return closeCompare();
   if (!$('picker-back').classList.contains('hidden')) return closePicker();
+  if (!$('suggest-back').classList.contains('hidden')) return closeSuggest();
   if (!$('dram-back').classList.contains('hidden')) return closeDram();
   if (!$('aidan-panel').classList.contains('hidden')) $('aidan-panel').classList.add('hidden');
 });
