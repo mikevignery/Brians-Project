@@ -140,6 +140,7 @@ footer { padding: 30px 24px 50px; color: var(--muted); font-size: 12.5px; text-a
       <button id="tab-shelf" onclick="setTab('shelf')">The Shelf <span class="count" id="count-shelf">0</span></button>
       <button id="tab-faq" onclick="setTab('faq')">Aidan Q&amp;A <span class="count" id="count-faq">0</span></button>
       <button id="tab-unanswered" onclick="setTab('unanswered')">Unanswered <span class="count" id="count-unanswered">0</span></button>
+      <button id="tab-feedback" onclick="setTab('feedback')">Feedback <span class="count" id="count-feedback">0</span></button>
     </div>
     <div id="panel"></div>
   </div>
@@ -152,7 +153,7 @@ const SUPABASE_URL = "https://pqbpmcshkwdngesnlzgi.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxYnBtY3Noa3dkbmdlc25semdpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM3MDE1MTQsImV4cCI6MjA5OTI3NzUxNH0.xlJpUcADnfpMsKqiNtfP84Fp2xm9YvyB4Lo9J_V3j7I";
 
 let db, currentUser = null, tab = 'pending';
-let allBottles = [], faqRows = [], namesById = {}, unanswered = [], faqDraft = null;
+let allBottles = [], faqRows = [], namesById = {}, unanswered = [], feedback = [], faqDraft = null;
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function msg(el, text, cls){ el.textContent = text; el.className = 'form-msg ' + cls; }
@@ -189,16 +190,18 @@ async function enter(){
 
 /* ---------- data ---------- */
 async function loadAll(){
-  const [{ data: b, error: be }, { data: f }, { data: p }, unRes] = await Promise.all([
+  const [{ data: b, error: be }, { data: f }, { data: p }, unRes, fbRes] = await Promise.all([
     db.from('bottles').select('*').order('id', { ascending: false }),
     db.from('aidan_faq').select('*').order('id'),
     db.from('profiles').select('id, full_name'),
-    db.from('aidan_unanswered').select('*').order('created_at', { ascending: false })
+    db.from('aidan_unanswered').select('*').order('created_at', { ascending: false }),
+    db.from('aidan_feedback').select('*').order('created_at', { ascending: false })
   ]);
   if (be) alert('Could not load bottles: ' + be.message);
   allBottles = b || [];
   faqRows = f || [];
   unanswered = (unRes && unRes.data) || [];
+  feedback = (fbRes && fbRes.data) || [];
   namesById = {};
   (p || []).forEach(x => namesById[x.id] = x.full_name || 'Member');
   renderCounts(); render();
@@ -210,9 +213,11 @@ function renderCounts(){
   $('count-shelf').textContent = shelf().length;
   $('count-faq').textContent = faqRows.length;
   $('count-unanswered').textContent = unanswered.length;
+  const downs = feedback.filter(f => f.verdict === 'down').length;
+  $('count-feedback').textContent = downs ? `${feedback.length} · ${downs}👎` : feedback.length;
 }
-function setTab(t){ tab = t; ['pending','shelf','faq','unanswered'].forEach(x => $('tab-'+x).classList.toggle('active', x === t)); render(); }
-function render(){ if (tab === 'pending') renderPending(); else if (tab === 'shelf') renderShelf(); else if (tab === 'unanswered') renderUnanswered(); else renderFaq(); }
+function setTab(t){ tab = t; ['pending','shelf','faq','unanswered','feedback'].forEach(x => $('tab-'+x).classList.toggle('active', x === t)); render(); }
+function render(){ if (tab === 'pending') renderPending(); else if (tab === 'shelf') renderShelf(); else if (tab === 'unanswered') renderUnanswered(); else if (tab === 'feedback') renderFeedback(); else renderFaq(); }
 
 /* ---------- cocktails <-> friendly lines ---------- */
 function cocktailsToLines(c){
@@ -388,6 +393,58 @@ function renderFaq(){
       <div id="qm${r.id}" class="form-msg"></div>
     </div>`).join('')}`;
 }
+/* ---------- answer feedback (thumbs) ---------- */
+let fbFilter = 'all';
+function renderFeedback(){
+  const list = feedback.filter(f => fbFilter === 'all' || f.verdict === fbFilter);
+  const ups = feedback.filter(f => f.verdict === 'up').length;
+  const downs = feedback.length - ups;
+  $('panel').innerHTML = `
+    <div class="controls" style="align-items:center;">
+      <p class="muted" style="font-size:13.5px; flex:1; min-width:220px;">
+        How members rated Aidan\u2019s answers — <b style="color:var(--ok)">${ups} 👍</b> · <b style="color:var(--danger)">${downs} 👎</b>.
+        Thumbs-down rows are the ones worth fixing.</p>
+      <select style="width:auto;" onchange="fbFilter=this.value; renderFeedback();">
+        <option value="all" ${fbFilter==='all'?'selected':''}>All votes</option>
+        <option value="down" ${fbFilter==='down'?'selected':''}>👎 only</option>
+        <option value="up" ${fbFilter==='up'?'selected':''}>👍 only</option>
+      </select>
+      ${feedback.length ? '<button class="btn danger sm" onclick="clearFeedback()">Clear all</button>' : ''}
+    </div>` +
+    (list.length ? '' : '<div class="empty">No votes here yet.</div>') +
+    list.map(f => `
+    <div class="rev-card" style="padding:16px 18px; ${f.verdict==='down' ? 'border-color: rgba(217,107,79,0.45);' : ''}">
+      <div class="rev-head" style="margin-bottom:8px;">
+        <span class="pill ${f.verdict==='down' ? 'pending' : 'live'}" style="${f.verdict==='down' ? 'background:var(--danger); color:#241505;' : ''}">${f.verdict === 'up' ? '👍 Helpful' : '👎 Missed'}</span>
+        <span class="sub">${esc(namesById[f.user_id] || 'a member')} · ${new Date(f.created_at).toLocaleDateString()}</span>
+      </div>
+      <p style="font-size:14.5px; margin-bottom:6px;"><b>Q:</b> \u201C${esc(f.question)}\u201D</p>
+      <p class="muted" style="font-size:13.5px; white-space:pre-line;"><b>Aidan said:</b> ${esc(f.answer)}</p>
+      <div class="acts" style="margin-top:12px;">
+        ${f.verdict === 'down' ? `<button class="btn sm" onclick="improveAnswer(${f.id})">Improve this answer</button>` : ''}
+        <button class="btn ghost sm" onclick="dismissFeedback(${f.id})">Dismiss</button>
+      </div>
+    </div>`).join('');
+}
+function improveAnswer(id){
+  const f = feedback.find(x => x.id === id);
+  if (!f) return;
+  faqDraft = { id: f.id, question: f.question, src: 'feedback' };
+  setTab('faq');
+}
+async function dismissFeedback(id){
+  const { error } = await db.from('aidan_feedback').delete().eq('id', id);
+  if (error) return alert(error.message);
+  feedback = feedback.filter(x => x.id !== id);
+  renderCounts(); renderFeedback();
+}
+async function clearFeedback(){
+  if (!confirm('Clear all ' + feedback.length + ' feedback entries?')) return;
+  for (const f of feedback) await db.from('aidan_feedback').delete().eq('id', f.id);
+  feedback = [];
+  renderCounts(); renderFeedback();
+}
+
 /* ---------- unanswered questions ---------- */
 function renderUnanswered(){
   $('panel').innerHTML =
@@ -407,7 +464,8 @@ function renderUnanswered(){
     </div>`).join('');
 }
 function draftAnswer(id){
-  faqDraft = unanswered.find(u => u.id === id) || null;
+  const u = unanswered.find(x => x.id === id);
+  faqDraft = u ? { id: u.id, question: u.question, src: 'unanswered' } : null;
   setTab('faq');
 }
 async function dismissUnanswered(id){
@@ -431,8 +489,13 @@ async function addFaq(){
   if (error) return msg(box, error.message, 'err');
   faqRows.push(data);
   if (faqDraft) {
-    await db.from('aidan_unanswered').delete().eq('id', faqDraft.id);
-    unanswered = unanswered.filter(u => u.id !== faqDraft.id);
+    if (faqDraft.src === 'feedback') {
+      await db.from('aidan_feedback').delete().eq('id', faqDraft.id);
+      feedback = feedback.filter(f => f.id !== faqDraft.id);
+    } else {
+      await db.from('aidan_unanswered').delete().eq('id', faqDraft.id);
+      unanswered = unanswered.filter(u => u.id !== faqDraft.id);
+    }
     faqDraft = null;
   }
   renderCounts(); renderFaq();
