@@ -137,6 +137,7 @@ a { color: var(--amber); }
   letter-spacing: 0.01em; color: var(--paper); text-decoration: none; white-space: nowrap;
 }
 .wordmark .dot { color: var(--amber); }
+.quick-cats { display: none; }   /* mobile-only quick category buttons */
 /* renders emoji glyphs in one flat theme color */
 .mono { color: transparent; text-shadow: 0 0 0 var(--icon); }
 .search-wrap { position: relative; flex: 1; min-width: 0; }
@@ -670,6 +671,16 @@ a { color: var(--amber); }
   /* ---- discover ---- */
   .discover-layout { grid-template-columns: 1fr; gap: 16px; padding-top: 18px; }
   .sidebar { position: static; }
+  .quick-cats { display: flex; gap: 9px; margin-bottom: 12px; }
+  .quick-cats button {
+    flex: 1; min-height: 44px; border-radius: 10px; font-weight: 700; font-size: 14.5px;
+    background: var(--barrel); border: 1px solid var(--line); color: var(--paper); font-family: inherit;
+  }
+  .quick-cats button.active {
+    background: linear-gradient(120deg, var(--amber), var(--amber-deep));
+    border-color: transparent; color: #241505;
+  }
+  .side-list button.qc-dup { display: none; }
   .sidebar details { border: 1px solid var(--line); border-radius: 12px; background: var(--barrel); overflow: hidden; }
   .sidebar details > summary {
     list-style: none; display: flex; align-items: center; gap: 10px;
@@ -1491,6 +1502,11 @@ function renderDiscover(){
     </div>
     <div class="discover-layout">
       <aside class="sidebar">
+        <div class="quick-cats">
+          <button class="${activeType==='All'?'active':''}" onclick="setType('All')">Whiskey</button>
+          <button class="${activeType==='Bourbon'?'active':''}" onclick="setType('Bourbon')">Bourbon</button>
+          <button class="${activeType==='Scotch'?'active':''}" onclick="setType('Scotch')">Scotch</button>
+        </div>
         <details id="filter-box" ${isDesktop() ? 'open' : ''}>
           <summary>
             <span class="f-title">☰ Filters${filterCount() ? ` <span class="f-count">${filterCount()}</span>` : ''}</span>
@@ -1500,7 +1516,7 @@ function renderDiscover(){
           <div class="side-group">
             <h4>Category</h4>
             <div class="side-list">
-              ${types.map(t => `<button class="${t===activeType?'active':''}" onclick="setType('${esc(t)}')">${t==='All' ? 'All Spirits' : esc(t)}</button>`).join('')}
+              ${types.map(t => `<button class="${t===activeType?'active':''}${['All','Bourbon','Scotch'].includes(t) ? ' qc-dup' : ''}" onclick="setType('${esc(t)}')">${t==='All' ? 'All Spirits' : esc(t)}</button>`).join('')}
             </div>
           </div>
           ${SHOW_PRICES ? `
@@ -2032,6 +2048,11 @@ function renderCocktails(){
     <div class="page-head"><h1>Cocktail Recipes</h1><p>Every recipe links back to bottles on the shelf that pair well with it.</p></div>
     <div class="discover-layout">
       <aside class="sidebar">
+        <div class="quick-cats">
+          <button class="${cSpirit==='All'?'active':''}" onclick="setCSpirit('All')">Whiskey</button>
+          <button class="${cSpirit==='Bourbon'?'active':''}" onclick="setCSpirit('Bourbon')">Bourbon</button>
+          <button class="${cSpirit==='Scotch'?'active':''}" onclick="setCSpirit('Scotch')">Scotch</button>
+        </div>
         <details id="filter-box" ${isDesktop() ? 'open' : ''}>
           <summary>
             <span class="f-title">☰ Filters${cFilterCount() ? ` <span class="f-count">${cFilterCount()}</span>` : ''}</span>
@@ -2040,7 +2061,7 @@ function renderCocktails(){
           </summary>
           <div class="side-group">
             <h4>Spirit Type</h4>
-            <div class="side-list">${spirits.map(s => `<button class="${s===cSpirit?'active':''}" onclick="setCSpirit('${s}')">${s}</button>`).join('')}</div>
+            <div class="side-list">${spirits.map(s => `<button class="${s===cSpirit?'active':''}${['All','Bourbon','Scotch'].includes(s) ? ' qc-dup' : ''}" onclick="setCSpirit('${s}')">${s}</button>`).join('')}</div>
           </div>
           <div class="side-group">
             <h4>Difficulty</h4>
@@ -2525,7 +2546,11 @@ function renderSettings(){
         ${quizAnswers && quizAnswers.flavor
           ? `<p style="font-size:14.5px;">${esc(QUIZ_LABELS.exp[quizAnswers.exp] || '')} · likes it ${esc(QUIZ_LABELS.flavor[quizAnswers.flavor] || '')} · mostly ${esc(QUIZ_LABELS.serve[quizAnswers.serve] || '')}</p>`
           : '<p class="muted" style="font-size:14.5px;">Not set yet — three quick questions and the shelf sorts itself around you.</p>'}
-        <button class="btn ghost" style="margin-top:10px;" onclick="startQuiz()">${quizAnswers && quizAnswers.flavor ? 'Retake the quiz' : 'Take the 3-question quiz'}</button>
+        <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:10px;">
+          <button class="btn ghost" onclick="startQuiz()">${quizAnswers && quizAnswers.flavor ? 'Retake the quiz' : 'Take the 3-question quiz'}</button>
+          ${quizAnswers && quizAnswers.flavor ? '<button class="btn ghost" style="border-color: rgba(217,107,79,0.5); color: var(--danger);" onclick="resetTasteProfile()">Reset profile</button>' : ''}
+        </div>
+        <div id="taste-msg" class="form-msg"></div>
       </div>
 
       <div class="trend-panel" style="margin-bottom:22px;">
@@ -2540,8 +2565,11 @@ function renderSettings(){
 
       <div class="trend-panel" style="margin-bottom:${isAdminUser ? '22px' : '60px'};">
         <h3>Notifications</h3>
-        <p class="muted" style="font-size:14.5px;">Email notifications (new bottles, replies to your reviews) are coming in a future update — nothing to configure yet.</p>
-        <button class="btn ghost" style="margin-top:14px;" onclick="signOut()">Sign out of Wandering Casks</button>
+        <p class="muted" style="font-size:14.5px;">Email updates (new bottles, new recipes, replies to your reviews) are coming soon. Want in when they launch?</p>
+        <label class="side-check" style="margin-top:12px; font-size:14.5px;">
+          <input type="checkbox" id="email-opt" ${p.email_opt_in ? 'checked' : ''} onchange="saveEmailOptIn(this.checked)"> Sign me up
+        </label>
+        <div id="email-opt-msg" class="form-msg"></div>
       </div>
 
       ${isAdminUser ? `
@@ -2552,6 +2580,25 @@ function renderSettings(){
       </div>` : ''}
     </div>`;
   });
+}
+async function resetTasteProfile(){
+  if (!confirm('Reset your taste profile? The shelf goes back to showing everything, and you can retake the quiz any time.')) return;
+  const { error } = await db.from('profiles').update({ taste_prefs: null }).eq('id', currentUser.id);
+  if (error) return alert(error.message);
+  quizAnswers = null;
+  matchesActive = false;
+  matchIds = new Set();
+  renderSettings();
+}
+async function saveEmailOptIn(on){
+  const box = $('email-opt-msg');
+  const { error } = await db.from('profiles').update({ email_opt_in: on }).eq('id', currentUser.id);
+  if (error) {
+    $('email-opt').checked = !on;
+    return msg(box, error.message.includes('email_opt_in') || error.message.includes('column')
+      ? 'Not enabled yet — the owners need to run settings-upgrade.sql.' : error.message, 'err');
+  }
+  msg(box, on ? 'You\u2019re on the list! 🥃' : 'Removed — you won\u2019t receive emails.', 'ok');
 }
 async function saveProfile(){
   const box = $('acct-msg');
