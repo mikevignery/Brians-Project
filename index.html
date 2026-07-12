@@ -140,9 +140,23 @@ a { color: var(--amber); }
 .quick-cats { display: none; }   /* mobile-only quick category buttons */
 /* renders emoji glyphs in one flat theme color */
 .mono { color: transparent; text-shadow: 0 0 0 var(--icon); }
-.search-wrap { position: relative; flex: 1; min-width: 0; }
-.search-wrap svg { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--icon); opacity: 0.7; pointer-events: none; }
-.search-wrap input { width: 100%; padding-left: 38px; }
+.search-wrap {
+  display: flex; align-items: stretch; flex: 1; min-width: 0;
+  border: 1px solid var(--line); border-radius: 9px;    /* same rounding as before */
+  background: var(--barrel); overflow: hidden;
+}
+.search-wrap:focus-within { border-color: var(--amber); }
+.search-wrap .ico-box {
+  display: flex; align-items: center; justify-content: center; flex: none;
+  width: 46px; background: var(--barrel-2); border-right: 1px solid var(--line);
+}
+.search-wrap .ico-box svg { width: 17px; height: 17px; color: var(--icon); opacity: 0.85; }
+.search-wrap input {
+  width: 100%; flex: 1; min-width: 0;
+  border: none !important; border-radius: 0; background: transparent;
+  padding: 12px 14px; font-size: 15px; color: var(--paper);
+}
+.search-wrap input:focus { outline: none; }
 #site-nav .links { display: flex; gap: 4px; flex: 1; }
 #site-nav .links a {
   color: var(--muted); text-decoration: none; font-size: 14.5px; font-weight: 700;
@@ -1539,7 +1553,7 @@ function renderDiscover(){
       </aside>
       <section>
         <div class="controls-row">
-          <span class="search-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><line x1="16.5" y1="16.5" x2="21" y2="21"></line></svg><input id="search" type="search" placeholder="Search bottles, flavours, distilleries…" value="${esc(searchQ)}" oninput="searchQ=this.value; renderGrid()"></span>
+          <span class="search-wrap"><span class="ico-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><line x1="16.5" y1="16.5" x2="21" y2="21"></line></svg></span><input id="search" type="search" placeholder="Search bottles, flavours, distilleries…" value="${esc(searchQ)}" oninput="searchQ=this.value; renderGrid()"></span>
         </div>
         <div id="match-banner" class="hidden">
           <div class="inner">
@@ -2077,7 +2091,7 @@ function renderCocktails(){
       </aside>
       <section>
         <div class="controls-row">
-          <span class="search-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><line x1="16.5" y1="16.5" x2="21" y2="21"></line></svg><input type="search" placeholder="Search cocktails by name, ingredient, or flavour…" value="${esc(cSearch)}" oninput="cSearch=this.value; renderCocktailGrid();"></span>
+          <span class="search-wrap"><span class="ico-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><line x1="16.5" y1="16.5" x2="21" y2="21"></line></svg></span><input type="search" placeholder="Search cocktails by name, ingredient, or flavour…" value="${esc(cSearch)}" oninput="cSearch=this.value; renderCocktailGrid();"></span>
         </div>
         <div class="grid cocktails" id="cocktail-grid" style="margin-top:14px;"></div>
       </section>
