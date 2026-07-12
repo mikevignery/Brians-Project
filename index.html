@@ -1503,9 +1503,9 @@ function renderDiscover(){
     <div class="discover-layout">
       <aside class="sidebar">
         <div class="quick-cats">
-          <button class="${activeType==='All'?'active':''}" onclick="setType('All')">Whiskey</button>
-          <button class="${activeType==='Bourbon'?'active':''}" onclick="setType('Bourbon')">Bourbon</button>
-          <button class="${activeType==='Scotch'?'active':''}" onclick="setType('Scotch')">Scotch</button>
+          <button class="${quickPick==='Whiskey'?'active':''}" onclick="setQuick('Whiskey')">Whiskey</button>
+          <button class="${quickPick==='Bourbon'?'active':''}" onclick="setQuick('Bourbon')">Bourbon</button>
+          <button class="${quickPick==='Scotch'?'active':''}" onclick="setQuick('Scotch')">Scotch</button>
         </div>
         <details id="filter-box" ${isDesktop() ? 'open' : ''}>
           <summary>
@@ -1605,7 +1605,13 @@ function closeFiltersOnMobile(){
   if (box && !isDesktop()) box.removeAttribute('open');
   refreshFilterBar();
 }
-function setType(t){ activeType = t; renderDiscover(); closeFiltersOnMobile(); }
+let quickPick = null;   // mobile quick-chip state — none active until tapped
+function setQuick(x){
+  if (quickPick === x) { quickPick = null; activeType = 'All'; }        // tap again to clear
+  else { quickPick = x; activeType = x === 'Whiskey' ? 'All' : x; }
+  renderDiscover(); closeFiltersOnMobile();
+}
+function setType(t){ quickPick = null; activeType = t; renderDiscover(); closeFiltersOnMobile(); }
 function setAvail(a){ activeAvail = a; renderDiscover(); closeFiltersOnMobile(); }
 // keep the box in the right state if the viewport crosses the breakpoint (e.g. rotation)
 (function(){
@@ -2049,9 +2055,9 @@ function renderCocktails(){
     <div class="discover-layout">
       <aside class="sidebar">
         <div class="quick-cats">
-          <button class="${cSpirit==='All'?'active':''}" onclick="setCSpirit('All')">Whiskey</button>
-          <button class="${cSpirit==='Bourbon'?'active':''}" onclick="setCSpirit('Bourbon')">Bourbon</button>
-          <button class="${cSpirit==='Scotch'?'active':''}" onclick="setCSpirit('Scotch')">Scotch</button>
+          <button class="${cQuickPick==='Whiskey'?'active':''}" onclick="setCQuick('Whiskey')">Whiskey</button>
+          <button class="${cQuickPick==='Bourbon'?'active':''}" onclick="setCQuick('Bourbon')">Bourbon</button>
+          <button class="${cQuickPick==='Scotch'?'active':''}" onclick="setCQuick('Scotch')">Scotch</button>
         </div>
         <details id="filter-box" ${isDesktop() ? 'open' : ''}>
           <summary>
@@ -2086,7 +2092,13 @@ function cFilterSummary(){
   if (cDiff !== 'All') parts.push(cDiff);
   return parts.length ? parts.join(' · ') : 'All cocktails showing';
 }
-function setCSpirit(v){ cSpirit = v; renderCocktails(); closeFiltersOnMobile(); }
+let cQuickPick = null;
+function setCQuick(x){
+  if (cQuickPick === x) { cQuickPick = null; cSpirit = 'All'; }
+  else { cQuickPick = x; cSpirit = x === 'Whiskey' ? 'All' : x; }
+  renderCocktails(); closeFiltersOnMobile();
+}
+function setCSpirit(v){ cQuickPick = null; cSpirit = v; renderCocktails(); closeFiltersOnMobile(); }
 function setCDiff(v){ cDiff = v; renderCocktails(); closeFiltersOnMobile(); }
 function renderCocktailGrid(){
   const q = cSearch.trim().toLowerCase();
