@@ -787,6 +787,38 @@ a { color: var(--amber); }
   .sidebar details > *:not(summary) { padding-left: 0; padding-right: 0; }
   .sidebar .side-group:first-of-type { margin-top: 0; }
 }
+
+/* ---------- find ingredients / store locator ---------- */
+.shop-list-strip { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; background: var(--barrel); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; margin: 14px 0 4px; font-size: 13.5px; }
+.shop-chip { background: var(--barrel-2); border: 1px solid var(--line); border-radius: 20px; padding: 3px 11px; font-size: 12.5px; }
+.stores-note { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 14px; padding: 14px 2px; }
+.store-spin { width: 16px; height: 16px; border: 2px solid var(--line); border-top-color: var(--amber); border-radius: 50%; animation: storespin 0.8s linear infinite; flex: none; }
+@keyframes storespin { to { transform: rotate(360deg); } }
+.store-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 12px; padding: 10px 0 60px; }
+.store-card { text-align: left; background: var(--barrel); border: 1px solid var(--line); border-radius: var(--radius); padding: 15px 16px; color: var(--paper); transition: border-color 0.12s ease, transform 0.12s ease; }
+.store-card:hover { border-color: var(--amber); transform: translateY(-1px); }
+.store-top { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; font-size: 15.5px; }
+.store-dist { color: var(--amber); font-weight: 700; font-size: 13px; white-space: nowrap; }
+.store-sub { display: flex; gap: 9px; align-items: center; margin-top: 7px; font-size: 12.5px; flex-wrap: wrap; }
+.store-badge { border: 1px solid var(--amber); color: var(--amber); border-radius: 20px; padding: 1px 9px; font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.store-badge.grocery { color: var(--ok); border-color: var(--ok); }
+.stores-manual { background: var(--barrel); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; max-width: 520px; font-size: 14.5px; }
+.manual-row { display: flex; gap: 10px; margin-top: 10px; }
+.manual-row input { flex: 1; padding: 11px 12px; background: var(--char); color: var(--paper); border: 1px solid var(--line); border-radius: 8px; font-size: 15px; }
+.manual-row input:focus { border-color: var(--amber); outline: none; }
+.sd-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 14px; margin-top: 8px; }
+.sd-card { background: var(--barrel); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; }
+.sd-card h3 { font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; font-family: 'Karla', sans-serif; }
+.sd-card p { font-size: 15px; }
+.hours-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.hours-table td { padding: 6px 4px; border-bottom: 1px solid var(--line); }
+.hours-table td:last-child { text-align: right; color: var(--muted); }
+.hours-table tr:last-child td { border-bottom: none; }
+@media (max-width: 767px) {
+  .sd-grid { grid-template-columns: 1fr; }
+  .store-list { grid-template-columns: 1fr; padding-bottom: 40px; }
+  .manual-row .btn { min-height: 44px; }
+}
 </style>
 </head>
 <body>
@@ -1095,7 +1127,7 @@ function pairedBottles(cocktail){
 /* ============================================================
    ROUTER — every "page" is a hash route in this one file
    ============================================================ */
-const PROTECTED = ['discover','bottle','cocktails','cocktail','mybar','trending','settings'];
+const PROTECTED = ['discover','bottle','cocktails','cocktail','mybar','trending','settings','stores','store'];
 
 function go(path){ location.hash = '#' + path; }
 
@@ -1123,7 +1155,8 @@ async function route(){
     login: () => renderAuthPage('login'), signup: () => renderAuthPage('signup'),
     discover: renderDiscover, bottle: () => renderBottleDetail(Number(r.arg)),
     cocktails: renderCocktails, cocktail: () => renderCocktailDetail(r.arg),
-    mybar: renderMyBar, trending: renderTrending, settings: renderSettings
+    mybar: renderMyBar, trending: renderTrending, settings: renderSettings,
+    stores: () => renderStores(r.arg), store: () => renderStoreDetail(r.arg)
   };
   (pages[r.name] || renderLanding)();
   $('site-footer').classList.toggle('hidden', !!currentUser && !['landing','about','scotch-guide'].includes(r.name));
@@ -2162,7 +2195,7 @@ function renderCocktailDetail(slug){
         </div>
 
         <div class="cd-ctas">
-          <a class="btn ghost" target="_blank" rel="noopener" href="https://www.google.com/maps/search/liquor+store+near+me">📍 Find Ingredients Near Me</a>
+          <a class="btn ghost" href="#/stores/${c.slug}">📍 Find Ingredients Near Me</a>
           <button class="btn ghost" onclick="activeType='All'; searchQ=''; go('/discover')">→ Bottles That Pair Well</button>
         </div>
 
@@ -2211,6 +2244,242 @@ function cdReply(t){
 function cdAsk(t){ cdUser(t); cdReply(t); }
 function cdSend(){ const t = $('cd-text').value.trim(); if (!t) return; $('cd-text').value = ''; cdUser(t); cdReply(t); }
 function currentCocktail(){ const r = parseRoute(); return r.name === 'cocktail' ? COCKTAILS.find(c => c.slug === r.arg) : null; }
+
+
+/* ============================================================
+   PAGE: FIND INGREDIENTS NEAR ME — store locator
+   API #1 (list):   Overpass / OpenStreetMap — liquor, wine &
+                    grocery stores within 10 miles. Free, no key.
+   API #2 (detail): Nominatim — formatted address on store click,
+                    merged with the store's phone + hours tags.
+   Swap point: replace fetchNearbyStores() + the Nominatim block
+   in renderStoreDetail() with Google Places later if desired.
+   ============================================================ */
+const STORES_RADIUS_METERS = 16093;   // 10 miles
+const STORES_RADIUS_LABEL  = '10 miles';
+const OVERPASS_URLS = [
+  'https://overpass-api.de/api/interpreter',
+  'https://overpass.kumi.systems/api/interpreter'
+];
+let storesCache  = null;   // [{oid,name,cat,lat,lon,distMi,tags}]
+let storesOrigin = null;   // {lat, lon, label}
+let storesSlug   = null;   // cocktail the visitor came from
+
+function storeCat(tags){ return tags.shop === 'supermarket' ? 'Grocery' : 'Liquor & Wine'; }
+function milesBetween(lat1, lon1, lat2, lon2){
+  const R = 3958.8, rad = d => d * Math.PI / 180;
+  const dLat = rad(lat2 - lat1), dLon = rad(lon2 - lon1);
+  const h = Math.sin(dLat/2)**2 + Math.cos(rad(lat1)) * Math.cos(rad(lat2)) * Math.sin(dLon/2)**2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+function storeAddrShort(t){
+  const street = [t['addr:housenumber'], t['addr:street']].filter(Boolean).join(' ');
+  return [street, t['addr:city']].filter(Boolean).join(', ');
+}
+
+function renderStores(slug){
+  if (slug) storesSlug = slug;
+  const c = storesSlug ? COCKTAILS.find(x => x.slug === storesSlug) : null;
+  $('page').innerHTML = `
+  <div class="wrap">
+    <div class="crumb">${c ? `<a href="#/cocktail/${c.slug}">${esc(c.name)}</a>` : '<a href="#/cocktails">Cocktails</a>'} &nbsp;›&nbsp; <b>Find Ingredients Near Me</b></div>
+    <div class="page-head">
+      <h1><span class="mono">📍</span> Find Ingredients Near Me</h1>
+      <p>Liquor, wine, and grocery stores within ${STORES_RADIUS_LABEL} of you. Tap a store for its address, phone, and hours.</p>
+    </div>
+    ${c ? `<div class="shop-list-strip"><b>Shopping for the ${esc(c.name)}:</b>${c.ingredients.map(i => `<span class="shop-chip">${esc(i[0])}</span>`).join('')}</div>` : ''}
+    <div id="stores-status"></div>
+    <div id="stores-list" class="store-list"></div>
+  </div>`;
+  if (storesCache && storesOrigin) {
+    storesStatus(`Showing ${storesCache.length} stores within ${STORES_RADIUS_LABEL} of ${esc(storesOrigin.label)}. <button class="link-btn" onclick="storesLocate(true)">↻ Use my current location</button>`);
+    renderStoresList();
+  } else {
+    storesLocate();
+  }
+}
+
+function storesStatus(html, spin){
+  const el = $('stores-status'); if (!el) return;
+  el.innerHTML = html ? `<div class="stores-note">${spin ? '<span class="store-spin"></span>' : ''}<span>${html}</span></div>` : '';
+}
+
+function storesLocate(fresh){
+  if (!navigator.geolocation) return storesManualUI('Your browser doesn\u2019t support location services \u2014 enter a city or ZIP instead:');
+  storesStatus('Finding your location\u2026', true);
+  navigator.geolocation.getCurrentPosition(
+    pos => fetchNearbyStores(pos.coords.latitude, pos.coords.longitude, 'your location'),
+    err => storesManualUI(err.code === 1
+      ? 'Location permission was declined \u2014 no problem. Enter a city or ZIP instead:'
+      : 'Couldn\u2019t pin down your location. Enter a city or ZIP instead:'),
+    { enableHighAccuracy: false, timeout: 10000, maximumAge: fresh ? 0 : 300000 }
+  );
+}
+
+function storesManualUI(msg){
+  storesStatus('');
+  const list = $('stores-list'); if (!list) return;
+  list.innerHTML = `<div class="stores-manual">
+    <p>${msg}</p>
+    <div class="manual-row">
+      <input id="stores-q" placeholder="e.g. Huntersville, NC \u2014 or 28078" onkeydown="if(event.key==='Enter') storesManualSearch()">
+      <button class="btn sm" onclick="storesManualSearch()">Search</button>
+    </div>
+  </div>`;
+}
+
+async function storesManualSearch(){
+  const q = $('stores-q').value.trim(); if (!q) return;
+  storesStatus(`Looking up \u201C${esc(q)}\u201D\u2026`, true);
+  try {
+    const r = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=${encodeURIComponent(q)}`);
+    const j = await r.json();
+    if (!j.length) return storesStatus('Couldn\u2019t find that place \u2014 try a city + state, or a 5-digit ZIP.');
+    fetchNearbyStores(parseFloat(j[0].lat), parseFloat(j[0].lon), j[0].display_name.split(',').slice(0, 2).join(','));
+  } catch (e) {
+    storesStatus('Location lookup failed \u2014 check your connection and try again.');
+  }
+}
+
+/* API #1 — Overpass: every shop=alcohol/wine/beverages/supermarket within the radius */
+async function fetchNearbyStores(lat, lon, label){
+  storesOrigin = { lat, lon, label };
+  storesStatus(`Searching for stores within ${STORES_RADIUS_LABEL}\u2026`, true);
+  const list = $('stores-list'); if (list) list.innerHTML = '';
+  const q = `[out:json][timeout:25];nwr["shop"~"^(alcohol|wine|beverages|supermarket)$"](around:${STORES_RADIUS_METERS},${lat},${lon});out tags center 80;`;
+  let data = null;
+  for (const url of OVERPASS_URLS){
+    try {
+      const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: 'data=' + encodeURIComponent(q) });
+      if (r.ok) { data = await r.json(); break; }
+    } catch (e) { /* try the mirror */ }
+  }
+  if (!data) return storesStatus('The store directory isn\u2019t responding right now \u2014 give it a minute and <button class="link-btn" onclick="renderStores()">try again</button>.');
+  storesCache = (data.elements || []).map(el => {
+    const t = el.tags || {};
+    const la = el.lat ?? (el.center && el.center.lat), lo = el.lon ?? (el.center && el.center.lon);
+    if (!t.name || la == null) return null;
+    return { oid: el.type[0].toUpperCase() + el.id, name: t.name, cat: storeCat(t), lat: la, lon: lo, distMi: milesBetween(lat, lon, la, lo), tags: t };
+  }).filter(Boolean).sort((a, b) => a.distMi - b.distMi);
+  if (!storesCache.length){
+    storesStatus(`No stores found within ${STORES_RADIUS_LABEL} of ${esc(label)}.`);
+    return storesManualUI('Try a nearby town or ZIP instead:');
+  }
+  storesStatus(`Found ${storesCache.length} stores within ${STORES_RADIUS_LABEL} of ${esc(label)}. <button class="link-btn" onclick="storesLocate(true)">↻ Use my current location</button>`);
+  renderStoresList();
+}
+
+function renderStoresList(){
+  const list = $('stores-list'); if (!list) return;
+  list.innerHTML = storesCache.map(s => `
+    <button class="store-card" onclick="go('/store/${s.oid}')">
+      <div class="store-top"><b>${esc(s.name)}</b><span class="store-dist">${s.distMi.toFixed(1)} mi</span></div>
+      <div class="store-sub">
+        <span class="store-badge ${s.cat === 'Grocery' ? 'grocery' : ''}">${s.cat}</span>
+        ${storeAddrShort(s.tags) ? `<span class="muted">${esc(storeAddrShort(s.tags))}</span>` : ''}
+      </div>
+    </button>`).join('');
+}
+
+/* deep-link fallback: rebuild one store when the list cache is cold */
+async function overpassById(oid){
+  const kind = { N: 'node', W: 'way', R: 'relation' }[oid[0]];
+  const num = oid.slice(1);
+  if (!kind || !/^\d+$/.test(num)) return null;
+  const q = `[out:json][timeout:25];${kind}(${num});out tags center;`;
+  for (const url of OVERPASS_URLS){
+    try {
+      const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: 'data=' + encodeURIComponent(q) });
+      if (!r.ok) continue;
+      const j = await r.json();
+      const el = (j.elements || [])[0]; if (!el) return null;
+      const t = el.tags || {};
+      const la = el.lat ?? (el.center && el.center.lat), lo = el.lon ?? (el.center && el.center.lon);
+      if (la == null) return null;
+      return { oid, name: t.name || 'Store', cat: storeCat(t), lat: la, lon: lo,
+               distMi: storesOrigin ? milesBetween(storesOrigin.lat, storesOrigin.lon, la, lo) : null, tags: t };
+    } catch (e) { /* try the mirror */ }
+  }
+  return null;
+}
+
+/* API #2 — Nominatim: formatted address for the clicked store */
+async function renderStoreDetail(oid){
+  if (!oid) return go('/stores');
+  let s = (storesCache || []).find(x => x.oid === oid) || null;
+  $('page').innerHTML = `
+  <div class="wrap">
+    <div class="crumb"><a href="#/stores">Find Ingredients</a> &nbsp;›&nbsp; <b>${s ? esc(s.name) : 'Store'}</b></div>
+    <div id="store-detail"><div class="stores-note"><span class="store-spin"></span><span>Pulling store details\u2026</span></div></div>
+  </div>`;
+  if (!s) s = await overpassById(oid);
+  const box = $('store-detail'); if (!box) return;
+  if (!s) { box.innerHTML = '<div class="empty-state">Couldn\u2019t load that store. <a href="#/stores">Back to the store list</a></div>'; return; }
+
+  // start from any address tags Overpass already gave us…
+  let addr = storeAddrShort(s.tags)
+    ? [[s.tags['addr:housenumber'], s.tags['addr:street']].filter(Boolean).join(' '), s.tags['addr:city'], s.tags['addr:state'], s.tags['addr:postcode']].filter(Boolean).join(', ')
+    : '';
+  // …then let Nominatim fill in / clean up the full formatted address
+  try {
+    const r = await fetch(`https://nominatim.openstreetmap.org/lookup?osm_ids=${oid}&format=jsonv2&addressdetails=1`);
+    const j = await r.json();
+    if (j.length){
+      const a = j[0].address || {};
+      const full = [[a.house_number, a.road].filter(Boolean).join(' '), a.city || a.town || a.village, a.state, a.postcode].filter(Boolean).join(', ');
+      if (full) addr = full;
+    }
+  } catch (e) { /* keep the Overpass address */ }
+
+  const phone = s.tags.phone || s.tags['contact:phone'] || '';
+  const site  = s.tags.website || s.tags['contact:website'] || '';
+  const hours = s.tags.opening_hours || '';
+  box.innerHTML = `
+    <div class="page-head">
+      <h1>${esc(s.name)}</h1>
+      <p><span class="store-badge ${s.cat === 'Grocery' ? 'grocery' : ''}">${s.cat}</span>${s.distMi != null ? ` &nbsp;·&nbsp; ${s.distMi.toFixed(1)} miles away` : ''}</p>
+    </div>
+    <div class="sd-grid">
+      <div class="sd-card">
+        <h3>Address</h3>
+        <p>${addr ? esc(addr) : '<span class="muted">Not listed for this store \u2014 the Directions button will take you straight there.</span>'}</p>
+        ${phone ? `<h3 style="margin-top:18px;">Phone</h3><p><a href="tel:${esc(phone.replace(/[^+\d]/g, ''))}">${esc(phone)}</a></p>` : ''}
+        ${site ? `<h3 style="margin-top:18px;">Website</h3><p><a target="_blank" rel="noopener" href="${esc(site)}">${esc(site.replace(/^https?:\/\//, '').replace(/\/$/, ''))}</a></p>` : ''}
+        <div class="cd-ctas" style="margin-top:20px;">
+          <a class="btn" target="_blank" rel="noopener" href="https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lon}">🧭 Directions</a>
+          <a class="btn ghost" href="#/stores">← Back to stores</a>
+        </div>
+      </div>
+      <div class="sd-card">
+        <h3>Hours</h3>
+        ${hours ? formatOpeningHours(hours) : '<p class="muted">Hours aren\u2019t listed for this store yet \u2014 the Directions link will show live hours in Maps.</p>'}
+      </div>
+    </div>
+    <p class="muted" style="font-size:12px; margin-top:16px;">Store data \u00A9 OpenStreetMap contributors. Details can lag reality \u2014 worth a call ahead on holidays.</p>`;
+}
+
+function formatOpeningHours(str){
+  if (/24\s*\/\s*7/.test(str)) return '<p>Open 24 hours, 7 days a week</p>';
+  const DAY = { Mo: 'Monday', Tu: 'Tuesday', We: 'Wednesday', Th: 'Thursday', Fr: 'Friday', Sa: 'Saturday', Su: 'Sunday', PH: 'Holidays' };
+  const rows = str.split(';').map(x => x.trim()).filter(Boolean).map(part => {
+    const m = part.match(/^([A-Za-z ,\-]+?)\s+(.+)$/);
+    let days = part, times = '';
+    if (m) { days = m[1]; times = m[2]; }
+    days = days.split(',').map(d => d.trim())
+      .map(d => d.includes('-') ? d.split('-').map(x => DAY[x.trim()] || x.trim()).join(' \u2013 ') : (DAY[d] || d))
+      .join(', ');
+    times = times.replace(/\boff\b/i, 'Closed').replace(/,/g, ', ')
+      .replace(/\b(\d{1,2}):(\d{2})\b/g, (_, h, mm) => {
+        h = parseInt(h, 10);
+        const ap = h >= 12 ? 'pm' : 'am';
+        const h12 = h % 12 === 0 ? 12 : h % 12;
+        return `${h12}:${mm} ${ap}`;
+      })
+      .replace(/-/g, ' \u2013 ');
+    return `<tr><td>${esc(days)}</td><td>${esc(times)}</td></tr>`;
+  });
+  return `<table class="hours-table">${rows.join('')}</table>`;
+}
 
 /* ============================================================
    PAGE: MY BAR — Collection / Tasting Log / Wishlist + stats
