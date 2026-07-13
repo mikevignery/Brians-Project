@@ -302,12 +302,14 @@ a { color: var(--amber); }
 .card {
   background: var(--barrel); border: 1px solid var(--line); border-radius: var(--radius);
   overflow: hidden; text-align: left; padding: 0; color: var(--paper);
-  transition: transform 0.14s ease, border-color 0.14s ease; position: relative; display: block; width: 100%;
+  transition: transform 0.14s ease, border-color 0.14s ease; position: relative;
+  display: flex; flex-direction: column; width: 100%;
 }
 .card:hover { transform: translateY(-3px); border-color: rgba(227,155,45,0.55); }
-.card .img { height: 155px; background: linear-gradient(160deg, var(--barrel-2), var(--barrel)); display: flex; align-items: center; justify-content: center; position: relative; border-bottom: 1px solid var(--line); }
+.card .img { flex: none; height: 155px; background: linear-gradient(160deg, var(--barrel-2), var(--barrel)); display: flex; align-items: center; justify-content: center; position: relative; border-bottom: 1px solid var(--line); }
 .card .img img { width: 100%; height: 100%; object-fit: cover; }
 .card .img .placeholder { font-family: 'Fraunces', serif; font-size: 34px; color: rgba(243,233,210,0.28); font-weight: 700; }
+body.light .card .img .placeholder { color: rgba(23, 34, 52, 0.2); }
 .card .badge-beginner {
   position: absolute; top: 10px; left: 10px; background: var(--amber); color: #241505;
   font-size: 10.5px; font-weight: 700; letter-spacing: 0.08em; padding: 4px 8px; border-radius: 5px;
@@ -319,23 +321,24 @@ a { color: var(--amber); }
   display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px;
 }
 .card.selected { border-color: var(--amber); }
-.card .body { padding: 13px 15px 15px; }
+.card .body { padding: 13px 15px 15px; flex: 1; display: flex; flex-direction: column; }
 .type-tag { display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: var(--amber); }
-.card h3 { font-size: 16.5px; margin: 3px 0 1px; }
+.card h3 { font-size: 16.5px; margin: 3px 0 1px; line-height: 1.3; min-height: 2.6em; }
 .card .company { color: var(--muted); font-size: 13px; }
-.card .meta { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; font-size: 13.5px; }
+.card .meta { display: flex; align-items: center; justify-content: space-between; margin-top: auto; padding-top: 10px; font-size: 13.5px; }
 .card .price { font-weight: 700; }
 .stars { color: var(--amber); letter-spacing: 1px; }
 .stars .count { color: var(--muted); letter-spacing: 0; }
 .empty-state { grid-column: 1 / -1; text-align: center; color: var(--muted); padding: 60px 20px; }
-#match-banner { margin: 0 0 18px; }
-#match-banner .inner {
+#match-banner, #pair-banner { margin: 0 0 18px; }
+#pair-banner { margin-top: 14px; }
+#match-banner .inner, #pair-banner .inner {
   display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center;
   background: linear-gradient(120deg, rgba(227,155,45,0.13), rgba(169,84,43,0.1));
   border: 1px solid rgba(227,155,45,0.4); border-radius: 10px; padding: 13px 17px; font-size: 14px;
 }
-#match-banner b { color: var(--amber); }
-#match-banner button { background: none; border: none; color: var(--amber); font-weight: 700; font-size: 13.5px; text-decoration: underline; }
+#match-banner b, #pair-banner b { color: var(--amber); }
+#match-banner button, #pair-banner button { background: none; border: none; color: var(--amber); font-weight: 700; font-size: 13.5px; text-decoration: underline; }
 #compare-tray {
   position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%); z-index: 70;
   display: flex; gap: 14px; align-items: center;
@@ -407,7 +410,7 @@ a { color: var(--amber); }
    COCKTAILS — sidebar + 3-col grid, and detail w/ Aidan panel
    ============================================================ */
 .grid.cocktails { grid-template-columns: repeat(3, 1fr); }
-.card .diff-line { display: flex; gap: 8px; align-items: center; margin-top: 9px; font-size: 13px; color: var(--muted); }
+.card .diff-line { display: flex; gap: 8px; align-items: center; margin-top: auto; padding-top: 9px; font-size: 13px; color: var(--muted); }
 .diff-pill { font-size: 11px; font-weight: 700; letter-spacing: 0.05em; padding: 3px 9px; border-radius: 20px; border: 1px solid; }
 .diff-pill.easy { color: var(--ok); border-color: rgba(143,174,107,0.5); }
 .diff-pill.medium { color: var(--amber); border-color: rgba(227,155,45,0.5); }
@@ -447,6 +450,8 @@ a { color: var(--amber); }
 .stat-card { background: var(--barrel); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; text-align: center; }
 .stat-card .big { font-family: 'Fraunces', serif; font-size: 32px; font-weight: 700; color: var(--amber); }
 .stat-card small { color: var(--muted); font-size: 13px; }
+button.stat-card { font: inherit; cursor: pointer; transition: border-color 0.12s ease, transform 0.12s ease; }
+button.stat-card:hover { border-color: var(--amber); transform: translateY(-2px); }
 .log-cta { display: flex; align-items: center; justify-content: space-between; gap: 16px; background: var(--barrel); border: 1px solid var(--line); border-radius: 10px; padding: 18px 20px; margin-top: 26px; flex-wrap: wrap; }
 .dram-entry { border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; margin-bottom: 12px; background: var(--barrel); }
 .dram-entry .head { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
@@ -1115,6 +1120,23 @@ function bottleSlugMatch(b, cocktailName){
   const list = Array.isArray(b.cocktails) ? b.cocktails : [];
   return list.some(c => c.name && c.name.toLowerCase().includes(cocktailName.toLowerCase().split(' ')[0]) && c.name.toLowerCase().replace(/[^a-z]/g,'').includes(cocktailName.toLowerCase().replace(/[^a-z]/g,'')));
 }
+let pairFilter = null;      // cocktail slug set by "Bottles That Pair Well"
+let makeableOnly = false;   // cocktails filter set from the My Bar stat card
+function pairMatchIds(cocktail){
+  // full (unsliced) set used by the Discover filter
+  const ids = new Set();
+  bottles.forEach(b => {
+    const named = (Array.isArray(b.cocktails) ? b.cocktails : []).some(c => (c.name || '').toLowerCase().includes(cocktail.name.toLowerCase()));
+    if (named || cocktail.types.includes(b.type)) ids.add(b.id);
+  });
+  return ids;
+}
+function clearPairFilter(){ pairFilter = null; renderDiscover(); }
+function makeableCocktailNames(){
+  const poss = new Set();
+  myBar.forEach(x => { const b = bottles.find(bb => bb.id === x.bottle_id); if (b) pairedBottlesInverse(b).forEach(n => poss.add(n)); });
+  return poss;
+}
 function pairedBottles(cocktail){
   // 1) bottles whose stored recipes mention this cocktail by name
   const named = bottles.filter(b => (Array.isArray(b.cocktails)?b.cocktails:[]).some(c => (c.name||'').toLowerCase().includes(cocktail.name.toLowerCase())));
@@ -1140,6 +1162,8 @@ function parseRoute(){
 async function route(){
   document.querySelector('#site-nav .links')?.classList.remove('open');
   const r = parseRoute();
+  if (!['discover','bottle'].includes(r.name)) pairFilter = null;
+  if (!['cocktails','cocktail'].includes(r.name)) makeableOnly = false;
   const needsAuth = AUTH_ENABLED && PROTECTED.includes(r.name);
   if (needsAuth && !currentUser) { renderNav(); return renderAuthPage('login', 'Sign in to open that page.'); }
 
@@ -1538,6 +1562,7 @@ function renderAuthPage(which, notice){
    ============================================================ */
 function renderDiscover(){
   const types = ['All', ...new Set(bottles.map(b => b.type))];
+  const pairC = pairFilter ? COCKTAILS.find(c => c.slug === pairFilter) : null;
   $('page').innerHTML = `
   <div class="wrap">
     <div class="page-head" style="display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap;">
@@ -1588,6 +1613,14 @@ function renderDiscover(){
         <div class="controls-row">
           <span class="search-wrap"><span class="ico-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><line x1="16.5" y1="16.5" x2="21" y2="21"></line></svg></span><input id="search" type="search" placeholder="Search bottles, flavours, distilleries…" value="${esc(searchQ)}" oninput="searchQ=this.value; renderGrid()"></span>
         </div>
+        ${pairC ? `<div id="pair-banner">
+          <div class="inner">
+            <b>Pairs with the ${esc(pairC.name)}</b>
+            <span>Showing bottles suited to this recipe — named pairings and matching spirits.</span>
+            <button onclick="go('/cocktail/${pairC.slug}')">← Back to the recipe</button>
+            <button onclick="clearPairFilter()">Show all bottles</button>
+          </div>
+        </div>` : ''}
         <div id="match-banner" class="hidden">
           <div class="inner">
             <b>Your matches</b>
@@ -1677,7 +1710,10 @@ function setAvail(a){ activeAvail = a; renderDiscover(); closeFiltersOnMobile();
 function filteredBottles(){
   const q = searchQ.trim().toLowerCase();
   const availGroup = AVAIL_GROUPS.find(g => g[0] === activeAvail);
+  const pairC = pairFilter ? COCKTAILS.find(c => c.slug === pairFilter) : null;
+  const pairIds = pairC ? pairMatchIds(pairC) : null;
   let list = bottles.filter(b =>
+    (!pairIds || pairIds.has(b.id)) &&
     (!matchesActive || matchIds.size === 0 || matchIds.has(b.id)) &&
     (activeType === 'All' || b.type === activeType) &&
     (!availGroup || !availGroup[1] || availGroup[1].includes(b.rarity || 1)) &&
@@ -2126,6 +2162,14 @@ function renderCocktails(){
         <div class="controls-row">
           <span class="search-wrap"><span class="ico-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><line x1="16.5" y1="16.5" x2="21" y2="21"></line></svg></span><input type="search" placeholder="Search cocktails by name, ingredient, or flavour…" value="${esc(cSearch)}" oninput="cSearch=this.value; renderCocktailGrid();"></span>
         </div>
+        ${makeableOnly ? `<div id="pair-banner">
+          <div class="inner">
+            <b>From your bar</b>
+            <span>Showing cocktails you can make with the bottles in My Bar.</span>
+            <button onclick="go('/mybar')">← Back to My Bar</button>
+            <button onclick="makeableOnly=false; renderCocktails();">Show all cocktails</button>
+          </div>
+        </div>` : ''}
         <div class="grid cocktails" id="cocktail-grid" style="margin-top:14px;"></div>
       </section>
     </div>
@@ -2149,7 +2193,9 @@ function setCSpirit(v){ cQuickPick = null; cSpirit = v; renderCocktails(); close
 function setCDiff(v){ cDiff = v; renderCocktails(); closeFiltersOnMobile(); }
 function renderCocktailGrid(){
   const q = cSearch.trim().toLowerCase();
+  const makeable = makeableOnly ? makeableCocktailNames() : null;
   const list = COCKTAILS.filter(c =>
+    (!makeable || makeable.has(c.name)) &&
     (cSpirit === 'All' || c.types.includes(cSpirit)) &&
     (cDiff === 'All' || c.diff === cDiff) &&
     (!q || c.name.toLowerCase().includes(q) || c.tagline.toLowerCase().includes(q) ||
@@ -2196,7 +2242,7 @@ function renderCocktailDetail(slug){
 
         <div class="cd-ctas">
           <a class="btn ghost" href="#/stores/${c.slug}">📍 Find Ingredients Near Me</a>
-          <button class="btn ghost" onclick="activeType='All'; searchQ=''; go('/discover')">→ Bottles That Pair Well</button>
+          <button class="btn ghost" onclick="pairFilter='${c.slug}'; matchesActive=false; activeType='All'; searchQ=''; go('/discover')">→ Bottles That Pair Well</button>
         </div>
 
         ${pairs.length ? `<div class="detail-section" style="margin-top:30px;"><h3>Bottles that pair well</h3>
@@ -2494,8 +2540,7 @@ function renderMyBar(){
   const owned = myBar.map(x => ({ ...x, bottle: bottles.find(b => b.id === x.bottle_id) })).filter(x => x.bottle);
   const wish = bottles.filter(b => myFavorites.has(b.id));
   const myRatingFor = id => (ratingsByBottle[id] || []).find(r => r.user_id === currentUser.id);
-  const cocktailsPossible = new Set();
-  owned.forEach(x => pairedBottlesInverse(x.bottle).forEach(n => cocktailsPossible.add(n)));
+  const cocktailsPossible = makeableCocktailNames();
   const avgMine = (() => { const rs = owned.map(x => myRatingFor(x.bottle_id)).filter(Boolean); return rs.length ? (rs.reduce((s,r)=>s+r.stars,0)/rs.length).toFixed(1) : '—'; })();
 
   const collection = owned.length ? `
@@ -2556,9 +2601,9 @@ function renderMyBar(){
     ${barTab==='collection' ? collection : barTab==='log' ? log : wishlist}
     <div class="stats-row">
       <div class="stat-card"><div class="big">${owned.length}</div><small>Bottles in collection</small></div>
-      <div class="stat-card"><div class="big">${myTastings.length}</div><small>Drams logged</small></div>
+      <button class="stat-card" title="Open your Tasting Log" onclick="barTab='log'; renderMyBar(); window.scrollTo({top:0,behavior:'smooth'});"><div class="big">${myTastings.length}</div><small>Drams logged ↗</small></button>
       <div class="stat-card"><div class="big">${avgMine}</div><small>Your average rating</small></div>
-      <div class="stat-card"><div class="big">${cocktailsPossible.size}</div><small>Cocktails you can make</small></div>
+      <button class="stat-card" title="See the recipes" onclick="makeableOnly=true; go('/cocktails')"><div class="big">${cocktailsPossible.size}</div><small>Cocktails you can make ↗</small></button>
     </div>
     <div style="padding-bottom:60px;"></div>
   </div>`;
