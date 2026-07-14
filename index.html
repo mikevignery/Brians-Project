@@ -569,6 +569,16 @@ button.stat-card:hover { border-color: var(--amber); transform: translateY(-2px)
 }
 .quiz-option small { display: block; color: var(--muted); font-weight: 400; font-size: 13px; margin-top: 2px; }
 .quiz-option:hover { border-color: var(--amber); }
+.quiz-x { position: absolute; top: 12px; right: 14px; background: none; border: none; color: var(--muted); font-size: 18px; line-height: 1; cursor: pointer; padding: 4px; }
+.quiz-x:hover { color: var(--paper); }
+.quiz-intro { display: flex; align-items: center; gap: 8px; color: var(--amber); font-weight: 700; font-size: 13.5px; margin-bottom: 12px; }
+.quiz-skip { margin-top: 16px; text-align: center; }
+.quiz-result { text-align: center; padding: 8px 4px 6px; }
+.quiz-result .type-tag { display: inline-block; }
+.pr-emoji { font-size: 40px; line-height: 1; margin-bottom: 8px; }
+.pr-overview { color: var(--muted); font-size: 15px; line-height: 1.55; margin: 10px auto 20px; max-width: 420px; }
+.pr-actions { display: flex; flex-direction: column; gap: 10px; }
+.pr-foot { color: var(--muted); font-size: 12.5px; margin-top: 16px; }
 .compare-scroll { overflow-x: auto; }
 .compare-table { border-collapse: collapse; min-width: 640px; width: 100%; font-size: 14px; }
 .compare-table th, .compare-table td { border-bottom: 1px solid var(--line); padding: 12px 14px; text-align: left; vertical-align: top; }
@@ -894,8 +904,8 @@ button.stat-card:hover { border-color: var(--amber); transform: translateY(-2px)
 
 <!-- ============================ QUIZ MODAL ============================ -->
 <div id="quiz-back" class="modal-back hidden" onclick="if(event.target===this) closeQuiz()">
-  <div class="modal" role="dialog" aria-modal="true" style="max-width:520px;">
-    <div class="modal-actions"><button class="txt-btn" onclick="closeQuiz()">Skip for now</button></div>
+  <div class="modal" role="dialog" aria-modal="true" style="max-width:520px; position:relative;">
+    <button class="quiz-x" onclick="closeQuiz()" aria-label="Close">✕</button>
     <div id="quiz-body"></div>
   </div>
 </div>
@@ -1909,13 +1919,18 @@ let quizAnswers = null, quizStep = 0, quizDraft = {}, matchesActive = false, mat
 function startQuiz(){ quizStep = 0; quizDraft = {}; renderQuizStep(); $('quiz-back').classList.remove('hidden'); document.body.style.overflow = 'hidden'; }
 function renderQuizStep(){
   const step = QUIZ[quizStep];
+  const intro = quizStep === 0
+    ? `<div class="quiz-intro"><span class="mono">✦</span> Hey, I\u2019m Aidan — three quick taps and I\u2019ll tune the whole site to you.</div>`
+    : '';
   $('quiz-body').innerHTML = `
     <div class="quiz-wrap">
+      ${intro}
       <div class="quiz-dots">${QUIZ.map((_, i) => `<span class="${i <= quizStep ? 'done' : ''}"></span>`).join('')}</div>
       <span class="type-tag">Question ${quizStep + 1} of ${QUIZ.length}</span>
       <h2>${step.q}</h2>
       <p class="lede" style="color:var(--muted); font-size:14px;">${step.lede}</p>
       ${step.opts.map(o => `<button class="quiz-option" onclick="pickQuizOption('${o[0]}')">${o[1]}<small>${o[2]}</small></button>`).join('')}
+      <div class="quiz-skip"><button class="txt-btn" onclick="closeQuiz()">Skip for now</button></div>
     </div>`;
 }
 function pickQuizOption(val){
@@ -1941,10 +1956,43 @@ function applyProfileDefaults(profile){
 async function finishQuiz(){
   quizAnswers = { ...quizDraft };
   quizAnswers.profile = profileFromAnswers(quizAnswers);
-  closeQuiz(true);
   await saveTastePrefs(quizAnswers);
   applyProfileDefaults(quizAnswers.profile);
+  renderProfileResult();   // keep the modal open and reveal their profile
+}
+function renderProfileResult(){
+  const isBeg = userProfile === 'beginner';
+  const title = isBeg ? 'You\u2019re a Curious Beginner' : 'You\u2019re an Informed Explorer';
+  const emoji = isBeg ? '🥃' : '🧭';
+  const overview = isBeg
+    ? 'Perfect place to start. I\u2019ll keep everything in plain English — no jargon, no gatekeeping. Your shelf is set to approachable, easy-to-find bottles, and I\u2019ll point you at cocktails you can actually make tonight. You can open up the full shelf whenever you\u2019re ready.'
+    : 'You know your way around a bottle. I\u2019ve unlocked the full shelf — every category, region, and peat level — plus the depth on each pour: mash bill, proof, and allocation. Let\u2019s find the ones worth chasing before the hype.';
+  $('quiz-body').innerHTML = `
+    <div class="quiz-wrap quiz-result">
+      <div class="pr-emoji">${emoji}</div>
+      <span class="type-tag">Your profile</span>
+      <h2>${title}</h2>
+      <p class="pr-overview">${overview}</p>
+      <div class="pr-actions">
+        <button class="btn full" onclick="profileGoCocktails()">🍸 Check out my cocktails</button>
+        <button class="btn ghost full" onclick="profileGoBottles()">🥃 Check out my bottles</button>
+      </div>
+      <p class="pr-foot">You can retake or reset this any time in your account settings.</p>
+    </div>`;
+}
+function profileGoCocktails(){
+  // Beginners land on the easy recipes; explorers see the whole book.
+  cDiff = (userProfile === 'beginner') ? 'Easy' : 'All';
+  cSpirit = 'All'; cSearch = ''; makeableOnly = false;
+  closeQuiz(true);
   go('/cocktails');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function profileGoBottles(){
+  activeType = 'All'; activeAvail = 'All'; searchQ = '';
+  beginnerOnly = (userProfile === 'beginner');
+  closeQuiz(true);
+  go('/discover');
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 async function closeQuiz(finished){
