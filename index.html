@@ -345,15 +345,15 @@ body.light .card .img .placeholder { color: rgba(23, 34, 52, 0.2); }
 .stars { color: var(--amber); letter-spacing: 1px; }
 .stars .count { color: var(--muted); letter-spacing: 0; }
 .empty-state { grid-column: 1 / -1; text-align: center; color: var(--muted); padding: 60px 20px; }
-#match-banner, #pair-banner { margin: 0 0 18px; }
+#match-banner, #pair-banner, #cprofile-banner, #bprofile-banner { margin: 0 0 18px; }
 #pair-banner { margin-top: 14px; }
-#match-banner .inner, #pair-banner .inner {
+#match-banner .inner, #pair-banner .inner, #cprofile-banner .inner, #bprofile-banner .inner {
   display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center;
   background: linear-gradient(120deg, rgba(227,155,45,0.13), rgba(169,84,43,0.1));
   border: 1px solid rgba(227,155,45,0.4); border-radius: 10px; padding: 13px 17px; font-size: 14px;
 }
-#match-banner b, #pair-banner b { color: var(--amber); }
-#match-banner button, #pair-banner button { background: none; border: none; color: var(--amber); font-weight: 700; font-size: 13.5px; text-decoration: underline; }
+#match-banner b, #pair-banner b, #cprofile-banner b, #bprofile-banner b { color: var(--amber); }
+#match-banner button, #pair-banner button, #cprofile-banner button, #bprofile-banner button { background: none; border: none; color: var(--amber); font-weight: 700; font-size: 13.5px; text-decoration: underline; }
 #compare-tray {
   position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%); z-index: 70;
   display: flex; gap: 14px; align-items: center;
@@ -1139,8 +1139,11 @@ let activeType = 'All';
 let activeAvail = 'All';
 let beginnerOnly = false;
 let priceMax = 200;
+let priceMin = 0;
 let sortBy = 'rating';
 let searchQ = '';
+let bBand = null;   // Discover profile band: null | 'beginner' | 'explorer'
+let cBand = null;   // Cocktails profile band: null | 'beginner' | 'explorer'
 
 const $ = (id) => document.getElementById(id);
 const RARITY = {
@@ -1645,7 +1648,7 @@ function renderDiscover(){
           ${SHOW_PRICES ? `
           <div class="side-group">
             <h4>Price Range</h4>
-            <input type="range" min="20" max="200" step="5" value="${priceMax}" style="width:100%; accent-color:var(--amber);" oninput="priceMax=+this.value; $('price-cap').textContent = priceMax>=200 ? '$200+' : '$'+priceMax; renderGrid(); refreshFilterBar();">
+            <input type="range" min="20" max="200" step="5" value="${priceMax}" style="width:100%; accent-color:var(--amber);" oninput="priceMax=+this.value; bBand=null; priceMin=0; $('price-cap').textContent = priceMax>=200 ? '$200+' : '$'+priceMax; renderGrid(); refreshFilterBar();">
             <div style="display:flex; justify-content:space-between; color:var(--muted); font-size:12.5px;"><span>$20</span><span id="price-cap">${priceMax>=200?'$200+':'$'+priceMax}</span></div>
           </div>` : ''}
           <div class="side-group">
@@ -1670,6 +1673,13 @@ function renderDiscover(){
             <span>Showing bottles suited to this recipe — named pairings and matching spirits.</span>
             <button onclick="go('/cocktail/${pairC.slug}')">← Back to the recipe</button>
             <button onclick="clearPairFilter()">Show all bottles</button>
+          </div>
+        </div>` : ''}
+        ${bBand ? `<div id="bprofile-banner">
+          <div class="inner">
+            <b>${bBand === 'beginner' ? 'Bottles for the Curious Beginner' : 'Bottles for the Informed Explorer'}</b>
+            <span>${bBand === 'beginner' ? 'Showing approachable picks $45 and under.' : 'Showing $46 and up — the deeper end of the shelf.'}</span>
+            <button onclick="clearProfileBottles()">Show all bottles</button>
           </div>
         </div>` : ''}
         <div id="match-banner" class="hidden">
@@ -1711,7 +1721,7 @@ function renderDiscover(){
 function isDesktop(){ try { return window.matchMedia('(min-width: 768px)').matches; } catch (_) { return true; } }
 function filterCount(){
   return (activeType !== 'All' ? 1 : 0) + (activeAvail !== 'All' ? 1 : 0) + (beginnerOnly ? 1 : 0)
-       + (SHOW_PRICES && priceMax < 200 ? 1 : 0);
+       + (SHOW_PRICES && priceMax < 200 ? 1 : 0) + (SHOW_PRICES && priceMin > 0 ? 1 : 0);
 }
 function filterSummary(){
   const parts = [];
@@ -1719,6 +1729,7 @@ function filterSummary(){
   if (activeAvail !== 'All') parts.push(activeAvail);
   if (beginnerOnly) parts.push('Beginner');
   if (SHOW_PRICES && priceMax < 200) parts.push('Under $' + priceMax);
+  if (SHOW_PRICES && priceMin > 0) parts.push('$' + priceMin + '+');
   return parts.length ? parts.join(' · ') : 'Everything showing';
 }
 function refreshFilterBar(){
@@ -1770,6 +1781,7 @@ function filteredBottles(){
     (!availGroup || !availGroup[1] || availGroup[1].includes(b.rarity || 1)) &&
     (!beginnerOnly || isBeginner(b)) &&
     (!SHOW_PRICES || priceMax >= 200 || (b.price != null && Number(b.price) <= priceMax)) &&
+    (!SHOW_PRICES || !priceMin || (b.price != null && Number(b.price) >= priceMin)) &&
     (!q || b.name.toLowerCase().includes(q) || b.company.toLowerCase().includes(q) ||
       (b.type||'').toLowerCase().includes(q) || (b.tasting_notes||'').toLowerCase().includes(q))
   );
@@ -1949,9 +1961,10 @@ function profileFromAnswers(a){
 }
 function applyProfileDefaults(profile){
   userProfile = profile;
-  // Option A: the profile tunes Discover's default view.
-  // Curious Beginner → beginner-friendly bottles first; Informed Explorer → the full shelf.
-  beginnerOnly = (profile === 'beginner');
+  beginnerOnly = false;
+  cBand = profile; bBand = profile;
+  if (profile === 'beginner') { priceMin = 0; priceMax = 45; }   // $45 and under
+  else { priceMin = 46; priceMax = 200; }                        // $46 and over
 }
 async function finishQuiz(){
   quizAnswers = { ...quizDraft };
@@ -1981,24 +1994,33 @@ function renderProfileResult(){
     </div>`;
 }
 function profileGoCocktails(){
-  // Beginners land on the easy recipes; explorers see the whole book.
-  cDiff = (userProfile === 'beginner') ? 'Easy' : 'All';
-  cSpirit = 'All'; cSearch = ''; makeableOnly = false;
+  // Beginner → easy & medium recipes; Explorer → medium & hard.
+  cBand = userProfile; cDiff = 'All'; cSpirit = 'All'; cSearch = ''; makeableOnly = false;
   closeQuiz(true);
   go('/cocktails');
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 function profileGoBottles(){
-  activeType = 'All'; activeAvail = 'All'; searchQ = '';
-  beginnerOnly = (userProfile === 'beginner');
+  // Beginner → $45 and under; Explorer → $46 and over.
+  bBand = userProfile; activeType = 'All'; activeAvail = 'All'; searchQ = ''; beginnerOnly = false;
+  if (userProfile === 'beginner') { priceMin = 0; priceMax = 45; }
+  else { priceMin = 46; priceMax = 200; }
   closeQuiz(true);
   go('/discover');
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
+function clearProfileCocktails(){ cBand = null; renderCocktails(); }
+function clearProfileBottles(){ bBand = null; priceMin = 0; priceMax = 200; renderDiscover(); }
 async function closeQuiz(finished){
   $('quiz-back').classList.add('hidden');
   document.body.style.overflow = '';
   if (finished !== true && !quizAnswers) await saveTastePrefs({ skipped: true });
+  // if a profile is active, reflect it on the page under the modal
+  if (quizAnswers && quizAnswers.profile) {
+    const rn = parseRoute().name;
+    if (rn === 'cocktails') renderCocktails();
+    else if (rn === 'discover') renderDiscover();
+  }
 }
 async function saveTastePrefs(prefs){
   if (!AUTH_ENABLED || !currentUser || !currentUser.id) return;
@@ -2284,17 +2306,26 @@ function renderCocktails(){
             <button onclick="makeableOnly=false; renderCocktails();">Show all cocktails</button>
           </div>
         </div>` : ''}
+        ${cBand ? `<div id="cprofile-banner">
+          <div class="inner">
+            <b>${cBand === 'beginner' ? 'Recipes for the Curious Beginner' : 'Recipes for the Informed Explorer'}</b>
+            <span>${cBand === 'beginner' ? 'Showing the easy and medium recipes — a friendly place to start.' : 'Showing the medium and hard recipes — time to level up.'}</span>
+            <button onclick="clearProfileCocktails()">Show all cocktails</button>
+          </div>
+        </div>` : ''}
         <div class="grid cocktails" id="cocktail-grid" style="margin-top:14px;"></div>
       </section>
     </div>
   </div>`;
   renderCocktailGrid();
 }
-function cFilterCount(){ return (cSpirit !== 'All' ? 1 : 0) + (cDiff !== 'All' ? 1 : 0); }
+function cBandDiffs(band){ return band === 'beginner' ? ['Easy','Medium'] : band === 'explorer' ? ['Medium','Hard'] : []; }
+function cFilterCount(){ return (cSpirit !== 'All' ? 1 : 0) + (cDiff !== 'All' ? 1 : 0) + (cBand ? 1 : 0); }
 function cFilterSummary(){
   const parts = [];
   if (cSpirit !== 'All') parts.push(cSpirit);
   if (cDiff !== 'All') parts.push(cDiff);
+  if (cBand) parts.push(cBand === 'beginner' ? 'Easy–Medium' : 'Medium–Hard');
   return parts.length ? parts.join(' · ') : 'All cocktails showing';
 }
 let cQuickPick = null;
@@ -2304,12 +2335,14 @@ function setCQuick(x){
   renderCocktails(); closeFiltersOnMobile();
 }
 function setCSpirit(v){ cQuickPick = null; cSpirit = v; renderCocktails(); closeFiltersOnMobile(); }
-function setCDiff(v){ cDiff = v; renderCocktails(); closeFiltersOnMobile(); }
+function setCDiff(v){ cDiff = v; cBand = null; renderCocktails(); closeFiltersOnMobile(); }
 function renderCocktailGrid(){
   const q = cSearch.trim().toLowerCase();
   const makeable = makeableOnly ? makeableCocktailNames() : null;
+  const bandDiffs = cBand ? cBandDiffs(cBand) : null;
   const list = COCKTAILS.filter(c =>
     (!makeable || makeable.has(c.name)) &&
+    (!bandDiffs || bandDiffs.includes(c.diff)) &&
     (cSpirit === 'All' || c.types.includes(cSpirit)) &&
     (cDiff === 'All' || c.diff === cDiff) &&
     (!q || c.name.toLowerCase().includes(q) || c.tagline.toLowerCase().includes(q) ||
@@ -3304,6 +3337,7 @@ async function resetTasteProfile(){
   quizAnswers = null;
   userProfile = null;
   beginnerOnly = false;
+  cBand = null; bBand = null; priceMin = 0; priceMax = 200;
   matchesActive = false;
   matchIds = new Set();
   renderSettings();
