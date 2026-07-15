@@ -1668,7 +1668,7 @@ let shelfIdx = 0, shelfTimer = null;
 
 function shelfShowHTML(){
   return `
-    <h3>Take a peek at the shelf</h3>
+    <!-- <h3>Take a peek at the shelf</h3> -->
     <div class="shelf-show" id="shelf-show"
          onmouseenter="shelfPause()" onmouseleave="shelfPlay()"
          ontouchstart="shelfPause()">
@@ -1686,7 +1686,7 @@ function shelfShowHTML(){
     <div class="shelf-dots" id="shelf-dots">
       ${SHELF_SLIDES.map((_, i) => `<button class="${i === 0 ? 'on' : ''}" onclick="shelfSet(${i}, true)" aria-label="Photo ${i + 1}"></button>`).join('')}
     </div>
-    <p class="caption">120+ bottles and growing — every one in plain English.</p>`;
+    <!-- <p class="caption">120+ bottles and growing — every one in plain English.</p>`;-->
 }
 
 function shelfSet(i, manual){
